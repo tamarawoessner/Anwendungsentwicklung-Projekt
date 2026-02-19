@@ -57,37 +57,61 @@ def expected_days_year(year: int) -> int:
     return 366 if calendar.isleap(year) else 365
 
 
-def meteorological_season(dt: date) -> str:
-    # Meteorological seasons by date boundaries
+def meteorological_season_and_year(
+    dt: date, southern_hemisphere: bool = False
+) -> tuple[str, int]:
+    # Meteorological seasons by date boundaries.
+    # For season-year buckets, Dec belongs to the next year's cross-year season
+    # (WINTER on north, SUMMER on south).
     m = dt.month
+
+    if southern_hemisphere:
+        if m in (12, 1, 2):
+            return "SUMMER", (dt.year + 1 if m == 12 else dt.year)
+        if m in (3, 4, 5):
+            return "AUTUMN", dt.year
+        if m in (6, 7, 8):
+            return "WINTER", dt.year
+        return "SPRING", dt.year  # 9, 10, 11
+
     if m in (3, 4, 5):
-        return "SPRING"
+        return "SPRING", dt.year
     if m in (6, 7, 8):
-        return "SUMMER"
+        return "SUMMER", dt.year
     if m in (9, 10, 11):
-        return "AUTUMN"
-    return "WINTER"  # 12, 1, 2
+        return "AUTUMN", dt.year
+    return "WINTER", (dt.year + 1 if m == 12 else dt.year)  # 12, 1, 2
 
 
-def meteorological_season_year(dt: date) -> int:
-    # Winter year: Dec belongs to next year's winter bucket
-    return dt.year + 1 if dt.month == 12 else dt.year
-
-
-def expected_days_season(season_year: int, season: str) -> int:
+def expected_days_season(
+    season_year: int, season: str, southern_hemisphere: bool = False
+) -> int:
     # meteorological seasons:
     # SPRING: Mar-May (season_year)
     # SUMMER: Jun-Aug (season_year)
     # AUTUMN: Sep-Nov (season_year)
     # WINTER: Dec(prev) + Jan-Feb(current) where current = season_year
-    if season == "SPRING":
-        months = [(season_year, 3), (season_year, 4), (season_year, 5)]
-    elif season == "SUMMER":
-        months = [(season_year, 6), (season_year, 7), (season_year, 8)]
-    elif season == "AUTUMN":
-        months = [(season_year, 9), (season_year, 10), (season_year, 11)]
-    else:  # WINTER
-        months = [(season_year - 1, 12), (season_year, 1), (season_year, 2)]
+    if southern_hemisphere:
+        # meteorological seasons on the southern hemisphere:
+        # SUMMER: Dec(prev)-Feb(current), AUTUMN: Mar-May,
+        # WINTER: Jun-Aug, SPRING: Sep-Nov
+        if season == "SUMMER":
+            months = [(season_year - 1, 12), (season_year, 1), (season_year, 2)]
+        elif season == "AUTUMN":
+            months = [(season_year, 3), (season_year, 4), (season_year, 5)]
+        elif season == "WINTER":
+            months = [(season_year, 6), (season_year, 7), (season_year, 8)]
+        else:  # SPRING
+            months = [(season_year, 9), (season_year, 10), (season_year, 11)]
+    else:
+        if season == "SPRING":
+            months = [(season_year, 3), (season_year, 4), (season_year, 5)]
+        elif season == "SUMMER":
+            months = [(season_year, 6), (season_year, 7), (season_year, 8)]
+        elif season == "AUTUMN":
+            months = [(season_year, 9), (season_year, 10), (season_year, 11)]
+        else:  # WINTER
+            months = [(season_year - 1, 12), (season_year, 1), (season_year, 2)]
 
     return sum(calendar.monthrange(y, m)[1] for y, m in months)
 
@@ -113,6 +137,8 @@ def main():
     with psycopg.connect(db_url, row_factory=tuple_row) as conn:
         conn.execute("SET search_path TO ghcn, public;")
         with conn.cursor() as cur:
+            cur.execute("SELECT station_id, lat FROM stations;")
+            station_lat = dict(cur.fetchall())
 
             def upsert_year(rows, chunk=5000):
                 sql = """
@@ -177,6 +203,8 @@ def main():
                         if element not in ELEMENTS:
                             continue
 
+                        is_southern = (station_lat.get(sid) or 0.0) < 0
+
                         dim = calendar.monthrange(year, month)[1]
 
                         # init buckets
@@ -214,8 +242,9 @@ def main():
 
                             # season aggregation (meteorological, by date)
                             dt = date(year, month, d)
-                            season = meteorological_season(dt)
-                            sy = meteorological_season_year(dt)
+                            season, sy = meteorological_season_and_year(
+                                dt, southern_hemisphere=is_southern
+                            )
                             skey = (sid, sy, season)
                             sb = season_acc.setdefault(
                                 skey,
@@ -261,7 +290,10 @@ def main():
 
                 season_rows = []
                 for (sid, sy, season), acc in season_acc.items():
-                    exp = expected_days_season(sy, season)
+                    is_southern = (station_lat.get(sid) or 0.0) < 0
+                    exp = expected_days_season(
+                        sy, season, southern_hemisphere=is_southern
+                    )
                     tmin_mean = (
                         (acc["TMIN_sum"] / acc["TMIN_cnt"]) if acc["TMIN_cnt"] else None
                     )
