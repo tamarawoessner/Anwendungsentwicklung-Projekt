@@ -181,6 +181,7 @@ def main():
                     conn.commit()
 
             bad_lines = 0
+            short_lines = 0
             processed_lines = 0
 
             for path in files:
@@ -192,6 +193,10 @@ def main():
                     for line in f:
                         if not line.strip():
                             continue
+
+                        if len(line.rstrip("\n")) < MIN_DLY_LINE_LEN:
+                            short_lines += 1
+
                         parsed = parse_dly_line(line)
                         if parsed is None:
                             bad_lines += 1
@@ -319,6 +324,7 @@ def main():
             print("aggregation done.")
             print(f"processed lines: {processed_lines}")
             print(f"bad lines skipped: {bad_lines}")
+            print(f"short lines padded: {short_lines}")
 
 
 if __name__ == "__main__":
