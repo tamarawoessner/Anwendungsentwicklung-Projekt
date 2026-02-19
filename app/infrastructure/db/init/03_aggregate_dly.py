@@ -225,14 +225,10 @@ def main():
                         )
 
                         for d in range(1, dim + 1):
-                            value, mflag, qflag, sflag = days[d - 1]
+                            value, _mflag, _qflag, _sflag = days[d - 1]
 
                             # missing or unparsable
                             if value is None or value == -9999:
-                                continue
-
-                            # ignore flagged (QFLAG not blank) for "unflagged data" workflow
-                            if qflag.strip() != "":
                                 continue
 
                             v_c = value / 10.0  # tenths of °C -> °C
