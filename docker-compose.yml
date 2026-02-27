@@ -16,6 +16,22 @@ services:
       retries: 10
     ports:
       - "5432:5432"
+  backend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: ghcn-backend
+    environment:
+      # Host ist im Docker-Netz der Service-Name "db"
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+    - ./app:/app
+    command: ["uvicorn", "main:app", "--host=0.0.0.0", "--port=8000", "--reload"]
 
 volumes:
   pgdata:
