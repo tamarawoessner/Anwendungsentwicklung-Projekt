@@ -20,6 +20,7 @@ services:
     image: ghcr.io/tamarawoessner/anwendungsentwicklung-projekt-backend:latest
     container_name: ghcn-backend
     environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       DATABASE_URL: ${DATABASE_URL}
     depends_on:
       db:
