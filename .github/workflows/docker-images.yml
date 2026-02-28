@@ -31,4 +31,4 @@ jobs:
           context: ./app
           file: ./app/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}-backend:latest
+          tags: ghcr.io/tamarawoessner/anwendungsentwicklung-projekt-backend:latest
