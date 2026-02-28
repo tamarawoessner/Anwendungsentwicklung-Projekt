@@ -19,6 +19,19 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/stations/{id}")
+def get_stations_years(id: str):
+    return {"start_year": 1900, "end_year": 2025}
+
+
+@app.get("/stations/search/")
+def search_stations(lat: float, lon: float, radius_km: int):
+    return [
+        {"id": "STATION_1", "name": "Station 1", "lat": lat + 0.1, "lon": lon + 0.1},
+        {"id": "STATION_2", "name": "Station 2", "lat": lat - 0.1, "lon": lon - 0.1},
+    ]
+
+
 if __name__ == "__main__":
     import uvicorn
 
