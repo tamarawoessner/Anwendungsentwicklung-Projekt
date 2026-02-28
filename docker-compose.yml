@@ -22,7 +22,6 @@ services:
       dockerfile: Dockerfile
     container_name: ghcn-backend
     environment:
-      # Host ist im Docker-Netz der Service-Name "db"
       DATABASE_URL: ${DATABASE_URL}
     depends_on:
       db:
