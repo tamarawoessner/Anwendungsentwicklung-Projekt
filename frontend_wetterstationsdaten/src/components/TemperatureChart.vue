@@ -28,15 +28,15 @@ const chartData = {
   datasets: [
     {
       label: 'TMAX (Höchstwerte)',
-      backgroundColor: '#ef4444',
-      borderColor: '#ef4444',
+      backgroundColor: '#f87171',
+      borderColor: '#f87171',
       data: [14.5, 15.2, 16.0, 15.8, 16.5, 17.1, 17.8],
       tension: 0.3
     },
     {
       label: 'TMIN (Tiefstwerte)',
-      backgroundColor: '#3b82f6',
-      borderColor: '#3b82f6',
+      backgroundColor: '#38bdf8',
+      borderColor: '#38bdf8',
       data: [4.2, 4.8, 5.1, 5.0, 5.6, 6.2, 6.5],
       tension: 0.3
     }
