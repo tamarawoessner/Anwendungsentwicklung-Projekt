@@ -1,19 +1,33 @@
 <script setup lang="ts">
-
+import Sidebar from './components/Sidebar.vue';
 </script>
 
 <template>
-  <div class="app-wrapper">
-    </div>
+  <div class="app-layout">
+
+    <Sidebar />
+
+    <main class="map-area">
+      <div id="map-container">Platzhalter Karte</div>
+    </main>
+
+  </div>
 </template>
 
 <style scoped>
-.app-wrapper {
-  margin: 0;
-  padding: 0;
-  width: 100vw;
-  height: 100vh;
+.app-layout {
   display: flex;
-  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  background-color: #0b1120; 
+  color: white;
+  font-family: sans-serif;
+}
+
+.map-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
