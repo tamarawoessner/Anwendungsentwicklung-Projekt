@@ -1,5 +1,5 @@
-from app.domain.geo import haversine_km
-from app.infrastructure.db.station_repository import (
+from domain.geo import haversine_km
+from infrastructure.db.station_repository import (
     read_location_for_all_stations,
     read_years_for_all_stations,
 )

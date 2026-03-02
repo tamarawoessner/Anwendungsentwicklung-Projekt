@@ -1,10 +1,10 @@
 # app/application/station_data_service.py
 
-from app.infrastructure.db.aggregation_repository import (
+from infrastructure.db.aggregation_repository import (
     read_station_data_year,
     read_station_data_seasons,
 )
-from app.infrastructure.db.station_repository import (
+from infrastructure.db.station_repository import (
     read_location_for_station,
     read_years_for_station,
 )
@@ -165,14 +165,14 @@ def get_station_data(conn, station_id, start_year, end_year, selection=None):
 if __name__ == "__main__":
     # Testaufruf (nur zur schnellen manuellen Prüfung, kein formaler Test)
     import json
-    from app.infrastructure.db.connection import connect_to_db
+    from infrastructure.db.connection import connect_to_db
 
     conn = connect_to_db()
     result = get_station_data(
         conn=conn,
-        station_id="GM000012345",
-        start_year=1990,
-        end_year=1995,
+        station_id="ZI000067983",
+        start_year=1951,
+        end_year=2025,
         selection={
             "year": {"tmin": True, "tmax": True},
             "winter": {"tmin": True},
