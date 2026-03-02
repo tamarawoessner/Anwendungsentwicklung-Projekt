@@ -1,0 +1,61 @@
+:root {
+  --color-tmax: #ef4444;
+  --color-tmin: #3b82f6;
+  
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-text-main: #334155;
+  --color-text-muted: #64748b;
+  
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  color: var(--color-text-main);
+  background-color: var(--color-background);
+  line-height: 1.6;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr; 
+  }
+
+  .chart-container {
+    min-height: 400px; 
+  }
+}
+
+@media (max-width: 600px) {
+  .analysis-view-container {
+    padding: 1rem;
+  }
+
+  .radial-menus-container {
+    flex-direction: column; 
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .menu-wrapper {
+    width: 100%;
+  }
+
+  .station-info-box h3 {
+    font-size: 1rem;
+  }
+}
