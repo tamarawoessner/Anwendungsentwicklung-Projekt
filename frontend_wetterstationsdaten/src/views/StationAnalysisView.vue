@@ -4,13 +4,15 @@ import { useRouter } from 'vue-router';
 import type { StationMeta } from '../types/index';
 import TemperatureChart from '../components/TemperatureChart.vue'; 
 import RadialSeasonMenu from '../components/RadialSeasonMenu.vue';
+import StationDetailsTable from '../components/StationDetailsTable.vue';
 
 const router = useRouter();
 
-const currentStation = ref<StationMeta>({
-  id: '10932',
+const currentStation = ref({
+  id: 'GME00105229',
   name: 'Villingen-Schwenningen',
-  distanceKm: 5.2
+  distanceKm: 6,
+  period: '1879-2025'
 });
 
 const goBackToSearch = () => {
@@ -27,35 +29,36 @@ const goBackToSearch = () => {
         
         <h2 class="section-title">Ausgewählte Station 📍</h2>
 
-        <div class="station-info-box">
-          <h3>{{ currentStation.name }}</h3>
-          <p><strong>ID:</strong> {{ currentStation.id }}</p>
-          <p><strong>Distanz:</strong> {{ currentStation.distanceKm }} km</p>
+      <div class="station-info-box">
+        <h3>{{ currentStation.name }}</h3>
+        <p class="station-id">#{{ currentStation.id }}</p>
+        <div class="station-details">
+          <p>Entfernung: {{ currentStation.distanceKm }}km</p>
+          <p>Zeitraum: {{ currentStation.period }}</p>
         </div>
+      </div>
 
         <button @click="goBackToSearch" class="btn-back">
-          Zurück / Andere Station wählen
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          andere Station wählen
         </button>
 
-        <div class="radial-menus-container">
-          <div class="menu-wrapper">
-            <h4>Jahreszeiten</h4>
-            <RadialSeasonMenu />
-          </div>
+        <div class="selection-container">
+          <h4>Auswahl</h4>
           
-          <div class="menu-wrapper">
-            <h4>Jahre</h4>
-            <div class="placeholder-circle">Jahres-Menü</div>
-          </div>
+          <RadialSeasonMenu />
+          
         </div>
 
-        <div class="table-container">
-          <h4>Details</h4>
-          <div class="placeholder-table">
-            Hier kommt die Tabelle (Jahr, Tmin, Tmax)
+        <div class="table-section">
+          <div class="header-with-icon">
+            <h4>Details</h4>
           </div>
+          <StationDetailsTable />
         </div>
-
       </aside>
 
       <section class="right-column">
@@ -92,12 +95,11 @@ const goBackToSearch = () => {
 .section-title {
   font-size: 1.25rem;
   margin: 0;
-  color: #333;
+  color: #ffffff;
 }
 
 .station-info-box {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #545454;
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
@@ -110,24 +112,26 @@ const goBackToSearch = () => {
 
 .station-info-box p {
   margin: 0.25rem 0;
-  color: #475569;
+  color: #ffffff;
 }
 
 .btn-back {
   padding: 0.75rem 1rem;
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: linear-gradient(90deg, #004aad, #cb6ce6);
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
-  color: #334155;
+  color: #ffffff;
   transition: all 0.2s;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .btn-back:hover {
-  background-color: #f1f5f9;
-  border-color: #94a3b8;
+  opacity: 0.8;
 }
 
 .radial-menus-container {
@@ -152,8 +156,8 @@ const goBackToSearch = () => {
 }
 
 .right-column {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: rgba(0 0, 0, 0.85);
+  border: 1px solid #545454;
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 4px 6px rgba(0,0,0,0.05);
@@ -162,6 +166,38 @@ const goBackToSearch = () => {
 .chart-container {
   width: 100%;
   min-height: 600px; 
+}
+
+.table-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .left-column {
+    order: 2;
+  }
+  
+  .right-column {
+    order: 1;
+  }
 }
 
 /* Platzhalter */
