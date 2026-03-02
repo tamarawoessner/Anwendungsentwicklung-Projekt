@@ -1,0 +1,59 @@
+from app.domain.geo import haversine_km
+from app.infrastructure.db.station_repository import (
+    read_location_for_all_stations,
+    read_years_for_all_stations,
+)
+
+
+def find_nearby_stations(
+    conn,
+    lat,
+    lon,
+    radius_km=50,
+    limit=50,
+):
+    # 1) Basisdaten (id, lat, lon)
+    stations = read_location_for_all_stations(conn)
+    if not stations:
+        return []
+
+    # 2) Year-Ranges (id -> {start_year, end_year})
+    years_rows = read_years_for_all_stations(conn) or []
+    years_by_station = {
+        row["station_id"]: {
+            "start_year": row["start_year"],
+            "end_year": row["end_year"],
+        }
+        for row in years_rows
+        if row and row.get("station_id")
+    }
+
+    enriched = []
+
+    for s in stations:
+        sid = s.get("station_id")
+        s_lat = s.get("lat")
+        s_lon = s.get("lon")
+        if sid is None or s_lat is None or s_lon is None:
+            continue
+
+        d_km = haversine_km(lat, lon, s_lat, s_lon)
+
+        if radius_km is not None and d_km > radius_km:
+            continue
+
+        years = years_by_station.get(sid, {"start_year": None, "end_year": None})
+
+        enriched.append(
+            {
+                "station_id": sid,
+                "lat": s_lat,
+                "lon": s_lon,
+                "distance_km": round(d_km, 3),
+                "start_year": years["start_year"],
+                "end_year": years["end_year"],
+            }
+        )
+
+    enriched.sort(key=lambda x: x["distance_km"])
+    return enriched[: max(0, int(limit))]
