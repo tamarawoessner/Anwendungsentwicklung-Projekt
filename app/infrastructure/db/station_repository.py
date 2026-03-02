@@ -27,7 +27,37 @@ def read_years_for_station(conn, station_id):
         return None
 
 
-def read_station_location(conn, station_id: str):
+def read_years_for_all_stations(conn):
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    station_id,
+                    MIN(first_year) AS start_year,
+                    MAX(last_year)  AS end_year
+                FROM ghcn.inventory
+                WHERE element IN ('TMIN', 'TMAX')
+                GROUP BY station_id
+                ORDER BY station_id;
+                """
+            )
+            rows = cursor.fetchall()
+
+        if not rows:
+            return []
+
+        return [
+            {"station_id": sid, "start_year": start_year, "end_year": end_year}
+            for (sid, start_year, end_year) in rows
+        ]
+
+    except Exception as e:
+        print(f"Error reading years for all stations: {e}")
+        return None
+
+
+def read_location_for_station(conn, station_id: str):
     try:
         with conn.cursor() as cursor:
             cursor.execute(
@@ -56,7 +86,7 @@ def read_station_location(conn, station_id: str):
         return None
 
 
-def read_all_stations_location(conn):
+def read_location_for_all_stations(conn):
     try:
         with conn.cursor() as cursor:
             cursor.execute(
