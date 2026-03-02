@@ -4,15 +4,20 @@
       <thead>
         <tr>
           <th>Jahr</th>
-          <th>Jahr-Min <span class="icon-cold">❄️</span></th>
-          <th>Jahr-Max <span class="icon-warm">🔥</span></th>
+          <th v-for="sel in selections" :key="sel">
+            {{ sel }} 
+            <span v-if="sel.includes('Kalt') || sel.includes('Winter')" class="icon-cold">❄️</span>
+            <span v-if="sel.includes('Warm') || sel.includes('Sommer')" class="icon-warm">🔥</span>
+          </th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="row in weatherData" :key="row.year">
+        <tr v-for="row in tableData" :key="row.year">
           <td>{{ row.year }}</td>
-          <td class="val-cold">{{ row.min.toLocaleString('de-DE') }}</td>
-          <td class="val-warm">{{ row.max.toLocaleString('de-DE') }}</td>
+          
+          <td v-for="sel in selections" :key="sel" :class="getColorClass(sel)">
+            {{ row.values[sel] !== null && row.values[sel] !== undefined ? row.values[sel].toLocaleString('de-DE') : '-' }}
+          </td>
         </tr>
       </tbody>
     </table>
@@ -20,72 +25,104 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed } from 'vue';
 
-// Dummy-Daten basierend auf deinem Screenshot
-const weatherData = ref([
-  { year: 1960, min: 3.9, max: 13.5 },
-  { year: 1961, min: 4.4, max: 14.2 },
-  { year: 1962, min: 2.4, max: 12.3 },
-  { year: 1963, min: 2.1, max: 12.4 },
-  { year: 1964, min: 3.6, max: 13.4 },
-  { year: 1965, min: 3.5, max: 12.5 },
-  { year: 1966, min: 4.1, max: 13.8 },
-  { year: 1967, min: 3.8, max: 14.0 },
-  { year: 1968, min: 2.9, max: 12.1 },
-]);
+const props = defineProps<{
+  selections: string[]
+}>();
+
+// Dummy-Datenstruktur
+const tableData = Array.from({ length: 50 }, (_, index) => {
+  const currentYear = 2024 - index;
+  
+  // SIMULATION EINER DATENLÜCKE: In diesen Jahren war die Station kaputt
+  if (currentYear === 1999 || currentYear === 2000) {
+    return {
+      year: currentYear,
+      values: { 'Ganzes Jahr': null, 'Winter': null, 'Winter-Kalt': null, 'Sommer-Warm': null }
+    };
+  }
+
+  // SIMULATION DER NULL-GRAD-FALLE: 1995 hatte es exakt 0 Grad im Winter
+  if (currentYear === 1995) {
+     return {
+      year: currentYear,
+      values: { 'Ganzes Jahr': 12.0, 'Winter': 0, 'Winter-Kalt': -4.5, 'Sommer-Warm': 30.0 }
+    };
+  }
+
+  // Normale Jahre
+  return {
+    year: currentYear,
+    values: {
+      'Ganzes Jahr': +(10 + Math.random() * 5).toFixed(1),
+      'Winter': +(-2 + Math.random() * 5).toFixed(1),
+      'Winter-Kalt': +(-10 + Math.random() * 8).toFixed(1),
+      'Sommer-Warm': +(28 + Math.random() * 8).toFixed(1)
+    }
+  };
+});
+
+const getColorClass = (selection: string) => {
+  if (selection.includes('Kalt') || selection.includes('Winter')) return 'val-cold';
+  if (selection.includes('Warm') || selection.includes('Sommer')) return 'val-warm';
+  return 'val-neutral';
+};
 </script>
 
 <style scoped>
 .table-container {
-  /* Das ist der wichtigste Teil für den Scrollbar */
-  max-height: 300px;
+  flex: 1; 
+  min-height: 0; 
+  height: 100%;
+  width: 100%;
   overflow-y: auto;
+  overflow-x: auto;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  background-color: rgba(15, 23, 42, 0.5); /* Sehr dunkles Blau-Transparent */
+  background-color: rgba(15, 23, 42, 0.5);
 }
 
 .details-table {
-  width: 100%;
+  min-width: 100%;
+  width: max-content;
   border-collapse: collapse;
   color: #ffffff;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   text-align: left;
 }
 
-/* Sticky Header: Bleibt beim Scrollen oben */
+th, td {
+  white-space: nowrap; 
+}
+
 thead th {
   position: sticky;
   top: 0;
   background-color: #0f172a;
-  padding: 0.75rem 1rem;
+  padding: 0.25rem 0.75rem;
   font-weight: bold;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   z-index: 1;
 }
 
 tbody td {
-  padding: 0.6rem 1rem;
+  padding: 0.25rem 0.75rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Farben für die Werte */
-.val-cold { color: #ffffff; }
-.val-warm { color: #ffffff; }
-
-.icon-cold { font-size: 0.8rem; }
-.icon-warm { font-size: 0.8rem; }
-
-/* Scrollbar-Styling für Chrome/Safari/Edge */
-.table-container::-webkit-scrollbar {
+.table-container::-webkit-scrollbar { 
   width: 6px;
+  height: 6px;
 }
-.table-container::-webkit-scrollbar-track {
-  background: transparent;
+.table-container::-webkit-scrollbar-track { 
+  background: transparent; 
 }
 .table-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
+}
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 </style>
