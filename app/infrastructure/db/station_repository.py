@@ -27,11 +27,14 @@ def read_years_for_station(conn, station_id):
         return None
 
 
-def read_years_for_all_stations(conn):
+def read_years_for_all_stations(
+    conn,
+    required_start_year=None,
+    required_end_year=None,
+):
     try:
         with conn.cursor() as cursor:
-            cursor.execute(
-                """
+            query = """
                 SELECT
                     station_id,
                     MIN(first_year) AS start_year,
@@ -39,9 +42,28 @@ def read_years_for_all_stations(conn):
                 FROM ghcn.inventory
                 WHERE element IN ('TMIN', 'TMAX')
                 GROUP BY station_id
-                ORDER BY station_id;
-                """
-            )
+            """
+
+            params = []
+            having_clauses = []
+
+            if required_start_year is not None and required_end_year is not None:
+                having_clauses.append("MIN(first_year) <= %s")
+                having_clauses.append("MAX(last_year) >= %s")
+                params.extend([required_start_year, required_end_year])
+            elif required_start_year is not None:
+                having_clauses.append("MAX(last_year) >= %s")
+                params.append(required_start_year)
+            elif required_end_year is not None:
+                having_clauses.append("MIN(first_year) <= %s")
+                params.append(required_end_year)
+
+            if having_clauses:
+                query += "\nHAVING " + " AND ".join(having_clauses)
+
+            query += "\nORDER BY station_id;"
+
+            cursor.execute(query, tuple(params))
             rows = cursor.fetchall()
 
         if not rows:

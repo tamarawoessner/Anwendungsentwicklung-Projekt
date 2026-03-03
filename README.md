@@ -8,7 +8,6 @@ git clone https://github.com/tamarawoessner/Anwendungsentwicklung-Projekt/
 Erstelle eine .env auf Basis von .env.example und ändere das Passwort
 
 4) Backend starten
-bash:
   docker compose pull
   docker compose up -d
 
