@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - backend
 
 permissions:
   contents: read
