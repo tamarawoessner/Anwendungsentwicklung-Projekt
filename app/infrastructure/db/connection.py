@@ -22,7 +22,6 @@ def connect_to_db():
             user=DB_USER,
             password=DB_PASSWORD,
         )
-        print("Connection successful")
         return conn
     except Exception as e:
         print(f"Error connecting to database: {e}")
@@ -30,4 +29,4 @@ def connect_to_db():
 
 
 if __name__ == "__main__":
-    connect_to_db()
+    pass
