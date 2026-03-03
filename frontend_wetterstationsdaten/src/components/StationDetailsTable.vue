@@ -6,8 +6,6 @@
           <th>Jahr</th>
           <th v-for="sel in selections" :key="sel">
             {{ sel }} 
-            <span v-if="sel.includes('Kalt') || sel.includes('Winter')" class="icon-cold">❄️</span>
-            <span v-if="sel.includes('Warm') || sel.includes('Sommer')" class="icon-warm">🔥</span>
           </th>
         </tr>
       </thead>

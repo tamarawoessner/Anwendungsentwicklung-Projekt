@@ -82,14 +82,11 @@ const goBackToSearch = () => {
 </template>
 
 <style scoped>
-/* ==========================================
-   1. DAS GRUND-GERÜST (Desktop)
-   ========================================== */
 .analysis-view-container {
   padding: 1rem 2rem;
   max-width: 1600px;
   margin: 0 auto;
-  height: calc(100vh - 2rem); /* Zwingt die Seite auf Bildschirmhöhe */
+  height: calc(100vh - 2rem);
   display: flex;
   flex-direction: column;
 }
@@ -98,8 +95,8 @@ const goBackToSearch = () => {
   display: grid;
   grid-template-columns: 350px 1fr; 
   gap: 2rem;
-  flex: 1; /* Füllt die Reste-Höhe aus */
-  min-height: 0; /* WICHTIG! */
+  flex: 1;
+  min-height: 0;
   width: 100%;
 }
 
@@ -109,7 +106,7 @@ const goBackToSearch = () => {
   gap: 0.75rem;
   height: 100%; 
   min-height: 0; 
-  overflow: hidden; /* Schneidet Überstehendes ab */
+  overflow: hidden;
 }
 
 .table-section {
@@ -120,7 +117,7 @@ const goBackToSearch = () => {
 }
 
 .right-column {
-  background-color: rgba(0, 0, 0, 0.85); /* Achtung: Hier war vorhin ein Kommafehler in deinem Code */
+  background-color: rgba(0, 0, 0, 0.85);
   border: 1px solid #545454;
   border-radius: 12px;
   padding: 1.5rem;
@@ -133,13 +130,11 @@ const goBackToSearch = () => {
 
 .chart-container {
   width: 100%;
-  flex: 1; /* Chart soll die Box ausfüllen */
+  flex: 1;
   position: relative;
+  min-height: 0;
 }
 
-/* ==========================================
-   2. DEINE BOXEN & BUTTONS (Bleiben erhalten!)
-   ========================================== */
 .section-title {
   font-size: 1.25rem;
   margin: 0;
@@ -160,7 +155,7 @@ const goBackToSearch = () => {
 
 .station-info-box p {
   margin: 0.15rem 0;
-  font-size: 0,9rem;
+  font-size: 0.9rem;
   color: #ffffff;
 }
 
@@ -205,9 +200,6 @@ const goBackToSearch = () => {
   color: #64748b;
 }
 
-/* ==========================================
-   3. SCROLLBAR (Tabelle)
-   ========================================== */
 .table-container::-webkit-scrollbar {
   width: 6px;
 }
@@ -223,41 +215,72 @@ const goBackToSearch = () => {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* ==========================================
-   4. RESPONSIVE (Unter 1024px)
-   ========================================== */
-@media screen and (max-width: 1024px) {
+@media screen and (min-width: 601px) and (max-width: 1024px) {
   .analysis-view-container {
-    height: auto !important; 
+    height: auto !important;
     min-height: 100vh;
-    display: block; 
   }
 
   .content-grid {
     display: flex !important;
     flex-direction: column;
-    height: auto !important;
-    overflow: visible;
+    gap: 2rem;
   }
 
   .left-column {
-    order: 1;
-    width: 100%;
-    height: auto !important; 
-    overflow: visible;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    height: auto !important;
+    position: relative;
+  }
+
+  .left-column > * {
+    grid-column: 1;
+  }
+
+  .left-column > .table-section {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: calc(50% - 0.75rem);
+    height: 100% !important;
+    margin-top: 0 !important;
   }
 
   .right-column {
-    order: 2;
     width: 100%;
-    height: 450px !important; 
-    flex: none;
+    height: 450px !important;
     margin-top: 1rem;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .analysis-view-container {
+    height: auto !important;
+  }
+
+  .content-grid {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  .left-column {
+    display: flex !important;
+    flex-direction: column;
+    gap: 1rem;
   }
 
   .table-section {
     height: 400px !important;
-    flex: none;
+  }
+
+  .right-column {
+    height: 400px !important;
+    min-height: 400px !important;
+    display: flex !important;
+    flex-direction: column;
     margin-top: 1rem;
   }
 }
