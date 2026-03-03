@@ -1,0 +1,12 @@
+[run]
+source = app
+branch = True
+omit =
+    */tests/*
+    */__pycache__/*
+    */.venv/*
+
+[report]
+show_missing = True
+skip_covered = True
+fail_under = 80

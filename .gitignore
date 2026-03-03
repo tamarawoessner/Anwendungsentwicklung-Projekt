@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 raw_data/
 .venv
+.coverage
 
 # Frontend misc
 frontend/node_modules/
