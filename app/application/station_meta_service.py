@@ -13,7 +13,14 @@ def get_station_meta(conn, station_id: str):
     station = read_location_for_station(conn, station_id)
     availability = read_years_for_station(conn, station_id)
 
+    availability_out = None
+    if availability is not None:
+        availability_out = {
+            "start_year": availability["start_year"],
+            "end_year": availability["end_year"],
+        }
+
     return {
         "station": station,
-        "availability": availability,
+        "availability": availability_out,
     }
