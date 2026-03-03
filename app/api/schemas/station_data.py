@@ -55,7 +55,6 @@ class StationInfo(BaseModel):
 
 
 class Availability(BaseModel):
-    station_id: str
     start_year: int
     end_year: int
 
@@ -67,19 +66,17 @@ class RequestInfo(BaseModel):
 
 
 class YearAggPoint(BaseModel):
-    station_id: str
     year: int
     tmin_mean_c: Optional[float] = None
     tmax_mean_c: Optional[float] = None
 
 
 class YearAggBlock(BaseModel):
-    element: ElementSelection
+    element: Optional[ElementSelection] = None
     data: list[YearAggPoint]
 
 
 class SeasonAggPoint(BaseModel):
-    station_id: str
     year: int
     season: SeasonKey
     tmin_mean_c: Optional[float] = None

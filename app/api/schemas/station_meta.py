@@ -10,7 +10,6 @@ class StationMetaInfo(BaseModel):
 
 
 class StationAvailability(BaseModel):
-    station_id: str
     start_year: int
     end_year: int
 
