@@ -76,20 +76,32 @@ def get_station_data(conn, station_id, start_year, end_year, selection=None):
     station_meta = read_location_for_station(conn, station_id)
     availability = read_years_for_station(conn, station_id)
 
+    availability_out = None
+    if availability is not None:
+        availability_out = {
+            "start_year": availability["start_year"],
+            "end_year": availability["end_year"],
+        }
+
     # --- Year block ---
+    year_requested = "year" in selection
     year_element = _flags_to_element(selection.get("year"))
-    if year_element is None:
+
+    if not year_requested:
         # Default gemäß UC3: Jahr + Tmin/Tmax
         year_element = "BOTH"
 
-    year_data = read_station_data_year(
-        conn=conn,
-        station_id=station_id,
-        start_year=start_year,
-        end_year=end_year,
-        element=year_element,
-    )
-    if year_data is None:
+    if year_element is not None:
+        year_data = read_station_data_year(
+            conn=conn,
+            station_id=station_id,
+            start_year=start_year,
+            end_year=end_year,
+            element=year_element,
+        )
+        if year_data is None:
+            year_data = []
+    else:
         year_data = []
 
     # --- Seasons block(s) ---
@@ -124,14 +136,10 @@ def get_station_data(conn, station_id, start_year, end_year, selection=None):
             "data": rows,
         }
 
-    # optional: gleiche Struktur garantieren (auch wenn leer)
-    for s in _ALLOWED_SEASONS:
-        seasons_out.setdefault(s, {"element": None, "data": []})
-
     # --- Final Response ---
     return {
         "station": station_meta,  # {station_id, name, lat, lon} oder None
-        "availability": availability,  # {start_year,end_year} oder None
+        "availability": availability_out,  # {start_year,end_year}
         "request": {
             "station_id": station_id,
             "start_year": start_year,
