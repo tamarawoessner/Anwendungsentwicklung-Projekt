@@ -14,17 +14,17 @@ def read_station_data_year(
         # Select only the columns we need depending on element
         if element == "TMIN":
             select_cols = """
-                station_id, year,
+                year,
                 tmin_mean_c
             """
         elif element == "TMAX":
             select_cols = """
-                station_id, year,
+                year,
                 tmax_mean_c
             """
         else:  # BOTH
             select_cols = """
-                station_id, year,
+                year,
                 tmin_mean_c, tmax_mean_c
             """
 
@@ -48,10 +48,9 @@ def read_station_data_year(
         results = []
         for row in rows:
             if element == "TMIN":
-                sid, year, tmin_mean_c = row
+                year, tmin_mean_c = row
                 results.append(
                     {
-                        "station_id": sid,
                         "year": int(year),
                         "tmin_mean_c": (
                             float(tmin_mean_c) if tmin_mean_c is not None else None
@@ -59,10 +58,9 @@ def read_station_data_year(
                     }
                 )
             elif element == "TMAX":
-                sid, year, tmax_mean_c = row
+                year, tmax_mean_c = row
                 results.append(
                     {
-                        "station_id": sid,
                         "year": int(year),
                         "tmax_mean_c": (
                             float(tmax_mean_c) if tmax_mean_c is not None else None
@@ -71,14 +69,12 @@ def read_station_data_year(
                 )
             else:  # BOTH
                 (
-                    sid,
                     year,
                     tmin_mean_c,
                     tmax_mean_c,
                 ) = row
                 results.append(
                     {
-                        "station_id": sid,
                         "year": int(year),
                         "tmin_mean_c": (
                             float(tmin_mean_c) if tmin_mean_c is not None else None
@@ -125,17 +121,17 @@ def read_station_data_seasons(
 
         if element == "TMIN":
             select_cols = """
-                station_id, year, season,
+                year, season,
                 tmin_mean_c
             """
         elif element == "TMAX":
             select_cols = """
-                station_id, year, season,
+                year, season,
                 tmax_mean_c
             """
         else:  # BOTH
             select_cols = """
-                station_id, year, season,
+                year, season,
                 tmin_mean_c, tmax_mean_c
             """
 
@@ -159,10 +155,9 @@ def read_station_data_seasons(
         results = []
         for row in rows:
             if element == "TMIN":
-                sid, year, season_val, tmin_mean_c = row
+                year, season_val, tmin_mean_c = row
                 results.append(
                     {
-                        "station_id": sid,
                         "year": int(year),
                         "season": season_val,
                         "tmin_mean_c": (
@@ -171,10 +166,9 @@ def read_station_data_seasons(
                     }
                 )
             elif element == "TMAX":
-                sid, year, season_val, tmax_mean_c = row
+                year, season_val, tmax_mean_c = row
                 results.append(
                     {
-                        "station_id": sid,
                         "year": int(year),
                         "season": season_val,
                         "tmax_mean_c": (
@@ -184,7 +178,6 @@ def read_station_data_seasons(
                 )
             else:  # BOTH
                 (
-                    sid,
                     year,
                     season_val,
                     tmin_mean_c,
@@ -192,7 +185,6 @@ def read_station_data_seasons(
                 ) = row
                 results.append(
                     {
-                        "station_id": sid,
                         "year": int(year),
                         "season": season_val,
                         "tmin_mean_c": (

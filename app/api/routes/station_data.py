@@ -11,15 +11,18 @@ router = APIRouter(prefix="/stations", tags=["station-data"])
 @router.post(
     "/{station_id}/data",
     response_model=StationDataResponse,
+    response_model_exclude_none=True,
 )
 def station_data(
     station_id: str,
     body: StationDataRequest,
-    start_year: int = Query(..., ge=1700, le=2500),
-    end_year: int = Query(..., ge=1700, le=2500),
+    start_year: int = Query(..., ge=1700, le=2025),
+    end_year: int = Query(..., ge=1700, le=2025),
 ):
     try:
-        selection = body.selection.model_dump() if body.selection else None
+        selection = (
+            body.selection.model_dump(exclude_unset=True) if body.selection else None
+        )
 
         conn = connect_to_db()
         try:
