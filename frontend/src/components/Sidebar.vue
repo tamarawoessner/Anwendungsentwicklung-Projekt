@@ -1,4 +1,48 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import type { Station } from '../App.vue';
+
+export interface SearchParams {
+  lat: number | null;
+  lng: number | null;
+  radius: number;
+  startYear: number | null;
+  endYear: number | null;
+  limit: number;
+}
+
+const lat = ref<number | null>(null);
+const lng = ref<number | null>(null);
+const radius = ref<number>(20);
+const startYear = ref<number | null>(null);
+const endYear = ref<number | null>(null);
+const limit = ref<number>(50);
+const isFilterMenuOpen = ref(false);
+
+const emit = defineEmits<{
+  (e: 'search', payload: SearchParams): void
+}>();
+defineProps<{
+  stations: Station[]
+}>();
+
+const setLimit = (newLimit: number) => {
+  limit.value = newLimit;
+  isFilterMenuOpen.value = false;
+  triggerSearch();
+};
+
+const triggerSearch = () => {
+  const paket = {
+    lat: lat.value,
+    lng: lng.value,
+    radius: Number(radius.value),
+    startYear: startYear.value,
+    endYear: endYear.value,
+    limit: limit.value
+  };
+  emit('search', paket);
+};
 </script>
 
 <template>
@@ -8,71 +52,71 @@
             <img src="../assets/cloudy.png" alt="Emoji mit Wolken und Sonne" class="header-picture">
         </div>
 
-        <div class="transparent-container">
-            <div class="input-group">
-                <label for="latitude">Breitengrad</label>
-                <input type="number" id="latitude" step="any" placeholder="48.06125" class="dark-input" />
-            </div>
 
-            <div class="input-group">
-                <label for="longitude">Längengrad</label>
-                <input type="number" id="longitude" step="any" placeholder="8.53461" class="dark-input">
-            </div>
+            <div class="transparent-container">
+    <div class="input-group">
+        <label for="latitude">Breitengrad</label>
+        <input type="number" id="latitude" v-model="lat" step="any" placeholder="48.06125" class="dark-input" />
+    </div>
 
-            <div class="input-group">
-                <label for="radius">Radius (in km)</label>
-                <div class="slider-wrapper">
-                    <input type="range" id="radius" min="1" max="100" value="20" class="dark-slider">
-                    <input type="number" class="slider-value" min="1" max="100" value="20">
-                </div>
-            </div>
+    <div class="input-group">
+        <label for="longitude">Längengrad</label>
+        <input type="number" id="longitude" v-model="lng" step="any" placeholder="8.53461" class="dark-input">
+    </div>
 
-            <div class="year-row">
-                <div class="input-group">
-                    <label for="start-year">Startjahr</label>
-                    <input type="number" id="start-year" placeholder="2002" class="dark-input year-input">
-                </div>
-
-                <div class="input-group">
-                    <label for="end-year">Endjahr</label>
-                    <input type="number" id="end-year" max="2025" placeholder="2016" class="dark-input year-input">
-                </div>
-            </div>
-
-            <button class="search-button">Stationen suchen</button>
+    <div class="input-group">
+        <label for="radius">Radius (in km)</label>
+        <div class="slider-wrapper">
+            <input type="range" id="radius" v-model="radius" min="1" max="100" class="dark-slider">
+            <input type="number" v-model="radius" class="slider-value" min="1" max="100">
         </div>
+    </div>
+
+    <div class="year-row">
+        <div class="input-group">
+            <label for="start-year">Startjahr</label>
+            <input type="number" id="start-year" v-model="startYear" placeholder="2002" class="dark-input year-input">
+        </div>
+
+        <div class="input-group">
+            <label for="end-year">Endjahr</label>
+            <input type="number" id="end-year" v-model="endYear" max="2025" placeholder="2016" class="dark-input year-input">
+        </div>
+    </div>
+
+    <button class="search-button" @click="triggerSearch">Stationen suchen</button>
+</div>
 
         <div class="subheader-group">
-            <h2>verfügbare Wetterstationen</h2>
-            <img src="../assets/filter.png" alt="Filter-Icon">
+    <h2>verfügbare Wetterstationen</h2>
+    
+    <div class="filter-wrapper">
+        <img src="../assets/filter.png" alt="Filter-Icon" @click="isFilterMenuOpen = !isFilterMenuOpen">
+
+        <div class="filter-dropdown" v-if="isFilterMenuOpen">
+            <div class="dropdown-header">Max. Treffer:</div>
+            <div class="dropdown-item" :class="{ active: limit === 10 }" @click="setLimit(10)">10 Stationen</div>
+            <div class="dropdown-item" :class="{ active: limit === 20 }" @click="setLimit(20)">20 Stationen</div>
+            <div class="dropdown-item" :class="{ active: limit === 50 }" @click="setLimit(50)">50 Stationen</div>
+            <div class="dropdown-item" :class="{ active: limit === 100 }" @click="setLimit(100)">100 Stationen</div>
         </div>
+    </div>
+</div>
 
         <div class="transparent-container">
 
-            <div class="stations-list-container">
-
-                <div class="stationcard-wrapper">
-                    <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
-                    <span class="station-name">Villingen-Schwenningen</span>
-                </div>
-
-                <div class="stationcard-wrapper">
-                    <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
-                    <span class="station-name">Bad Dürrheim</span>
-                </div>
-
-                <div class="stationcard-wrapper">
-                    <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
-                    <span class="station-name">Klippeneck</span>
-                </div>
-
-                <div class="stationcard-wrapper">
-                    <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
-                    <span class="station-name">Scrolltest</span>
-                </div>
-
+<div class="stations-list-container">
+            <div 
+                class="stationcard-wrapper" 
+                v-for="station in stations" 
+                :key="station.station_id"
+            >
+                <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
+                <span class="station-name">{{ station.station_id }}</span>
             </div>
         </div>
+
+            </div>
     </aside>
 </template>
 
@@ -298,6 +342,54 @@ h2{
 
 .subheader-group img:hover{
   opacity: 1;
+}
+
+/* Positionierung für den Container */
+.filter-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Das schwebende Menü */
+.filter-dropdown {
+  position: absolute;
+  top: 100%; /* Direkt unter dem Icon */
+  right: 0;  /* Rechtsbündig ans Icon getackert */
+  margin-top: 8px;
+  background-color: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  padding: 8px 0;
+  min-width: 150px;
+  z-index: 100; /* Damit es ÜBER der Liste liegt */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.dropdown-header {
+  padding: 4px 16px 8px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  border-bottom: 1px solid #334155;
+  margin-bottom: 4px;
+}
+
+.dropdown-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #e2e8f0;
+  transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #334155;
+}
+
+/* So heben wir das aktuell ausgewählte Limit optisch hervor */
+.dropdown-item.active {
+  color: #a855f7;
+  font-weight: bold;
 }
 
 </style>
