@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from psycopg import Error as PsycopgError
 
-from app.api.schemas.station_search import (
+from api.schemas.station_search import (
     StationSearchRequest,
     StationSearchResponse,
     StationSearchResult,
