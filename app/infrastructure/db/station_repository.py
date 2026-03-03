@@ -116,3 +116,10 @@ def read_location_for_all_stations(conn):
     except Exception as e:
         print(f"Error reading station ids and locations with TMIN/TMAX: {e}")
         return None
+
+
+if __name__ == "__main__":
+    from infrastructure.db.connection import connect_to_db
+
+    conn = connect_to_db()
+    print(read_years_for_all_stations(conn))

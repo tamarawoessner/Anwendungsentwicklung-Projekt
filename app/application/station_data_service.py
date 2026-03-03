@@ -1,10 +1,10 @@
 # app/application/station_data_service.py
 
-from app.infrastructure.db.aggregation_repository import (
+from infrastructure.db.aggregation_repository import (
     read_station_data_year,
     read_station_data_seasons,
 )
-from app.infrastructure.db.station_repository import (
+from infrastructure.db.station_repository import (
     read_location_for_station,
     read_years_for_station,
 )
@@ -62,23 +62,6 @@ def _normalize_season_key(key):
 
 
 def get_station_data(conn, station_id, start_year, end_year, selection=None):
-    """
-    Baut die aufbereiteten Daten für eine Station zusammen.
-
-    selection Beispiel (Request-JSON):
-    {
-      "year": {"tmin": true, "tmax": true},
-      "winter": {"tmin": true, "tmax": false},
-      "spring": {"tmin": false, "tmax": true},
-      "summer": null,
-      "autumn": "BOTH"
-    }
-
-    Default (wenn selection fehlt/None):
-      - Jahr: BOTH
-      - Saisons: keine (nur wenn explizit gewählt)
-    """
-    # --- Basic Validation (minimal, ohne Pydantic) ---
     if station_id is None or str(station_id).strip() == "":
         raise ValueError("station_id is required")
 
@@ -163,16 +146,15 @@ def get_station_data(conn, station_id, start_year, end_year, selection=None):
 
 
 if __name__ == "__main__":
-    # Testaufruf (nur zur schnellen manuellen Prüfung, kein formaler Test)
     import json
-    from app.infrastructure.db.connection import connect_to_db
+    from infrastructure.db.connection import connect_to_db
 
     conn = connect_to_db()
     result = get_station_data(
         conn=conn,
-        station_id="GM000012345",
-        start_year=1990,
-        end_year=1995,
+        station_id="ZI000067983",
+        start_year=1951,
+        end_year=2025,
         selection={
             "year": {"tmin": True, "tmax": True},
             "winter": {"tmin": True},
