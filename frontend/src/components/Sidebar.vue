@@ -236,7 +236,7 @@ h2{
 }
 
 .stations-list-container::-webkit-scrollbar {
-  width: 4px; /* Viel dünner und eleganter! */
+  width: 4px;
 }
 .stations-list-container::-webkit-scrollbar-track {
   background: transparent;
