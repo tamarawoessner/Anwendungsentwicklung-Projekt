@@ -23,6 +23,8 @@ def search_stations(body: StationSearchRequest):
                 lon=float(body.lon),
                 radius_km=float(body.radius_km),
                 limit=int(body.limit),
+                start_year=body.start_year,
+                end_year=body.end_year,
             )
         finally:
             conn.close()

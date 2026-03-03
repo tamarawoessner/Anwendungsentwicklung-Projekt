@@ -11,6 +11,8 @@ def find_nearby_stations(
     lon,
     radius_km=50,
     limit=50,
+    start_year=None,
+    end_year=None,
 ):
     # 1) Basisdaten (id, lat, lon)
     stations = read_location_for_all_stations(conn)
@@ -18,7 +20,14 @@ def find_nearby_stations(
         return []
 
     # 2) Year-Ranges (id -> {start_year, end_year})
-    years_rows = read_years_for_all_stations(conn) or []
+    years_rows = (
+        read_years_for_all_stations(
+            conn,
+            required_start_year=start_year,
+            required_end_year=end_year,
+        )
+        or []
+    )
     years_by_station = {
         row["station_id"]: {
             "start_year": row["start_year"],
@@ -43,6 +52,18 @@ def find_nearby_stations(
             continue
 
         years = years_by_station.get(sid, {"start_year": None, "end_year": None})
+
+        if start_year is not None and end_year is not None:
+            if years["start_year"] is None or years["end_year"] is None:
+                continue
+            if years["start_year"] > start_year or years["end_year"] < end_year:
+                continue
+        elif start_year is not None:
+            if years["end_year"] is None or years["end_year"] < start_year:
+                continue
+        elif end_year is not None:
+            if years["start_year"] is None or years["start_year"] > end_year:
+                continue
 
         enriched.append(
             {
