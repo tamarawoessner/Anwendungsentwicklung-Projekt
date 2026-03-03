@@ -62,23 +62,6 @@ def _normalize_season_key(key):
 
 
 def get_station_data(conn, station_id, start_year, end_year, selection=None):
-    """
-    Baut die aufbereiteten Daten für eine Station zusammen.
-
-    selection Beispiel (Request-JSON):
-    {
-      "year": {"tmin": true, "tmax": true},
-      "winter": {"tmin": true, "tmax": false},
-      "spring": {"tmin": false, "tmax": true},
-      "summer": null,
-      "autumn": "BOTH"
-    }
-
-    Default (wenn selection fehlt/None):
-      - Jahr: BOTH
-      - Saisons: keine (nur wenn explizit gewählt)
-    """
-    # --- Basic Validation (minimal, ohne Pydantic) ---
     if station_id is None or str(station_id).strip() == "":
         raise ValueError("station_id is required")
 
@@ -163,7 +146,6 @@ def get_station_data(conn, station_id, start_year, end_year, selection=None):
 
 
 if __name__ == "__main__":
-    # Testaufruf (nur zur schnellen manuellen Prüfung, kein formaler Test)
     import json
     from infrastructure.db.connection import connect_to_db
 

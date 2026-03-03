@@ -57,3 +57,18 @@ def find_nearby_stations(
 
     enriched.sort(key=lambda x: x["distance_km"])
     return enriched[: max(0, int(limit))]
+
+
+if __name__ == "__main__":
+    import json
+    from infrastructure.db.connection import connect_to_db
+
+    conn = connect_to_db()
+    result = find_nearby_stations(
+        conn=conn,
+        lat=47.997,
+        lon=7.842,
+        radius_km=100,
+        limit=5,
+    )
+    print(json.dumps(result, indent=2))
