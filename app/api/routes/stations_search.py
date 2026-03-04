@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException
 from psycopg import Error as PsycopgError
 
-from api.schemas.station_search import (
+from app.api.schemas.station_search import (
     StationSearchRequest,
     StationSearchResponse,
     StationSearchResult,
 )
-from infrastructure.db.connection import connect_to_db
-from application.station_search_service import find_nearby_stations
+from app.infrastructure.db.connection import connect_to_db
+from app.application.station_search_service import find_nearby_stations
 
 router = APIRouter(prefix="/stations", tags=["stations"])
 
