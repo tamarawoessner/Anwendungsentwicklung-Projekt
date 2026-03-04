@@ -4,6 +4,7 @@ import Sidebar, { type SearchParams } from './components/Sidebar.vue';
 import NearbyCard from './components/NearbyCard.vue';
 
 export interface Station {
+  name: string;
   station_id: string;
   lat: number;
   lon: number;
