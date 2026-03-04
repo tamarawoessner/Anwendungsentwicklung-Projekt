@@ -26,8 +26,8 @@ const tableData = computed(() => {
   if (props.data.year?.data) {
     props.data.year.data.forEach((p: any) => {
       const row = getRow(p.year);
-      row.values['Ganzes Jahr-kalt'] = formatTemp(p.tmin_mean_c);
-      row.values['Ganzes Jahr-warm'] = formatTemp(p.tmax_mean_c);
+      row.values['Ganzes Jahr - min'] = formatTemp(p.tmin_mean_c);
+      row.values['Ganzes Jahr - max'] = formatTemp(p.tmax_mean_c);
       
       if (p.tmin_mean_c !== null || p.tmax_mean_c !== null) {
         row.values['Ganzes Jahr'] = `Min: ${formatTemp(p.tmin_mean_c)} / Max: ${formatTemp(p.tmax_mean_c)}`;
@@ -36,10 +36,10 @@ const tableData = computed(() => {
   }
 
   const seasonMap: Record<string, { min: string, max: string, both: string }> = {
-    'WINTER': { min: 'Winter-Kalt', max: 'Winter-Warm', both: 'Winter' },
-    'SPRING': { min: 'Frühling-Kalt', max: 'Frühling-Warm', both: 'Frühling' },
-    'SUMMER': { min: 'Sommer-Kalt', max: 'Sommer-Warm', both: 'Sommer' },
-    'AUTUMN': { min: 'Herbst-Kalt', max: 'Herbst-Warm', both: 'Herbst' }
+    'WINTER': { min: 'Winter - min', max: 'Winter - max', both: 'Winter' },
+    'SPRING': { min: 'Frühling - min', max: 'Frühling - max', both: 'Frühling' },
+    'SUMMER': { min: 'Sommer - min', max: 'Sommer - max', both: 'Sommer' },
+    'AUTUMN': { min: 'Herbst - min', max: 'Herbst - max', both: 'Herbst' }
   };
 
   if (props.data.seasons) {

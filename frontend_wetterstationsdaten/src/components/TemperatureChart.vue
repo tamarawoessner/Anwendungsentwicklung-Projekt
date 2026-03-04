@@ -11,8 +11,8 @@ const chartCanvas = ref<HTMLCanvasElement | null>(null);
 let myChart: Chart | null = null;
 
 const getColor = (selection: string) => {
-  if (selection.includes('Kalt') || selection.includes('Winter')) return '#38bdf8';
-  if (selection.includes('Warm') || selection.includes('Sommer')) return '#f87171';
+  if (selection.includes('min') || selection.endsWith(' - min')) return '#38bdf8';
+  if (selection.includes('max') || selection.endsWith(' - max')) return '#f87171';
   return '#a78bfa';
 };
 
@@ -47,13 +47,13 @@ const buildChartData = () => {
     });
   };
 
-  extractPoints(props.data.year, 'Ganzes Jahr-kalt', 'Ganzes Jahr-warm', 'Ganzes Jahr');
+  extractPoints(props.data.year, 'Ganzes Jahr - min', 'Ganzes Jahr - max', 'Ganzes Jahr');
   
   if (props.data.seasons) {
-    extractPoints(props.data.seasons.WINTER, 'Winter-Kalt', 'Winter-Warm', 'Winter');
-    extractPoints(props.data.seasons.SPRING, 'Frühling-Kalt', 'Frühling-Warm', 'Frühling');
-    extractPoints(props.data.seasons.SUMMER, 'Sommer-Kalt', 'Sommer-Warm', 'Sommer');
-    extractPoints(props.data.seasons.AUTUMN, 'Herbst-Kalt', 'Herbst-Warm', 'Herbst');
+    extractPoints(props.data.seasons.WINTER, 'Winter - min', 'Winter - max', 'Winter');
+    extractPoints(props.data.seasons.SPRING, 'Frühling - min', 'Frühling - max', 'Frühling');
+    extractPoints(props.data.seasons.SUMMER, 'Sommer - min', 'Sommer - max', 'Sommer');
+    extractPoints(props.data.seasons.AUTUMN, 'Herbst - min', 'Herbst - max', 'Herbst');
   }
 
   const sortedLabels = Array.from(labels).sort();
