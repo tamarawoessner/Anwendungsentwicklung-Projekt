@@ -13,11 +13,11 @@ class StationSearchRequest(BaseModel):
     limit: Annotated[int, Field(50, description="Max stations returned", ge=1, le=500)]
     start_year: Annotated[
         int | None,
-        Field(None, description="Earliest requested year", ge=1700, le=2200),
+        Field(None, description="Earliest requested year", ge=1700, le=2025),
     ]
     end_year: Annotated[
         int | None,
-        Field(None, description="Latest requested year", ge=1700, le=2200),
+        Field(None, description="Latest requested year", ge=1700, le=2025),
     ]
 
     @model_validator(mode="after")
