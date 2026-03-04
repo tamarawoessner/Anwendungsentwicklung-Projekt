@@ -64,11 +64,11 @@ const buildRequestPayload = () => {
   };
 
   const map: Record<string, any> = {
-    'year': {both: 'Ganzes Jahr', min: 'Ganzes Jahr-kalt', max: 'Ganzes Jahr-warm'},
-    'winter': {both: 'Winter', min: 'Winter-kalt', max: 'Winter-warm'},
-    'spring': {both: 'Frühling', min: 'Frühling-Kalt', max: 'Frühling-Warm'},
-    'summer': {both: 'Sommer', min: 'Sommer-Kalt', max: 'Sommer-Warm'},
-    'autumn': {both: 'Herbst', min: 'Herbst-Kalt', max: 'Herbst-Warm'}
+    'year': {both: 'Ganzes Jahr', min: 'Ganzes Jahr - min', max: 'Ganzes Jahr - max'},
+    'winter': {both: 'Winter', min: 'Winter - min', max: 'Winter - max'},
+    'spring': {both: 'Frühling', min: 'Frühling - min', max: 'Frühling - max'},
+    'summer': {both: 'Sommer', min: 'Sommer - min', max: 'Sommer - max'},
+    'autumn': {both: 'Herbst', min: 'Herbst - min', max: 'Herbst - max'}
   }
 
   for (const [key, mapping] of Object.entries(map)) {
