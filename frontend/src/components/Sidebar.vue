@@ -112,7 +112,7 @@ const triggerSearch = () => {
                 :key="station.station_id"
             >
                 <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
-                <span class="station-name">{{ station.station_id }}</span>
+                <span class="station-name">{{ station.name }}</span>
             </div>
         </div>
 
