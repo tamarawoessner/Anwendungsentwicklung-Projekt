@@ -30,8 +30,6 @@ const buildChartData = () => {
         if (!datasetMap[keyTmin]) datasetMap[keyTmin] = [];
         datasetMap[keyTmin].push({ x: p.year, y: p.tmin_mean_c });
         if (props.selections.includes(keyBoth)) {
-          // ensure the array exists and keep a local reference so TypeScript
-          // doesn't complain about `undefined`
           const bothMinKey = keyBoth + '_min';
           const bothMinArr = datasetMap[bothMinKey] ?? (datasetMap[bothMinKey] = []);
           bothMinArr.push({ x: p.year, y: p.tmin_mean_c });
