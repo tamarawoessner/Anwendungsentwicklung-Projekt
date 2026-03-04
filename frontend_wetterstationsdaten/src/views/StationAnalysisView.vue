@@ -1,56 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { apiService } from '../services/api';
-import type { StationMeta, WeatherDataPoint } from '../types/index';
+import type { StationMeta } from '../types/index';
 import TemperatureChart from '../components/TemperatureChart.vue'; 
 import RadialSeasonMenu from '../components/RadialSeasonMenu.vue';
-import StationDetailsTable from '../components/StationDetailsTable.vue';
 
 const router = useRouter();
 
-const currentStation = ref<any>(null);
-const stationData = ref<any>(null);
-const weatherData = ref<WeatherDataPoint[]>([]);
-const isLoading = ref(true);
-const errorMessage = ref<string | null>(null);
-const activeSelections = ref<string[]>(['Ganzes Jahr']);
-
-const loadStationData = async () => {
-  isLoading.value = true;
-  errorMessage.value = null;
-try {
-    const stationId = 'GME00105229'; // Deine Test-ID
-    
-    // Wir rufen Metadaten UND Wetterdaten ab
-    const [meta, dataResponse] = await Promise.all([
-      apiService.getStationMeta(stationId),
-      apiService.getStationData(stationId)
-    ]);
-
-    currentStation.value = meta;
-    stationData.value = dataResponse;
-  } catch (err) {
-    errorMessage.value = "Verbindung zum Backend fehlgeschlagen. Läuft Docker?";
-    console.error("API Error:", err);
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-onMounted(() => {
-  loadStationData();
+const currentStation = ref<StationMeta>({
+  id: '10932',
+  name: 'Villingen-Schwenningen',
+  distanceKm: 5.2
 });
-
-const toggleSelection = (bereich: string) => {
-  const index = activeSelections.value.indexOf(bereich);
-  
-  if (index > -1) {
-    activeSelections.value.splice(index, 1);
-  } else {
-    activeSelections.value.push(bereich);
-  }
-};
 
 const goBackToSearch = () => {
   router.push({ name: 'home' }); 
@@ -60,58 +21,46 @@ const goBackToSearch = () => {
 <template>
   <div class="analysis-view-container">
     
-    <div v-if="isLoading" class="state-overlay">
-      <div class="spinner"></div>
-      <p>Daten werden von der Wetterstation abgerufen...</p>
-    </div>
-
-    <div v-else-if="errorMessage" class="state-overlay error">
-      <div class="error-content">
-        <h2>Ups! Etwas lief schief.</h2>
-        <p>{{ errorMessage }}</p>
-        <button @click="loadStationData" class="btn-back">Erneut versuchen</button>
-      </div>
-    </div>
-
-    <main v-else class="content-grid">
+    <main class="content-grid">
       
       <aside class="left-column">
+        
         <h2 class="section-title">Ausgewählte Station 📍</h2>
 
-        <div class="station-info-box" v-if="currentStation">
-          <h3>{{ currentStation.station.name }}</h3>
-          <p class="station-id">#{{ currentStation.station.station_id }}</p>
-          <div class="station-details">
-            <p>Zeitraum: {{ currentStation.availability.start_year }} - {{ currentStation.availability.end_year }}</p>
-          </div>
+        <div class="station-info-box">
+          <h3>{{ currentStation.name }}</h3>
+          <p><strong>ID:</strong> {{ currentStation.id }}</p>
+          <p><strong>Distanz:</strong> {{ currentStation.distanceKm }} km</p>
         </div>
 
         <button @click="goBackToSearch" class="btn-back">
-          andere Station wählen
+          Zurück / Andere Station wählen
         </button>
 
-        <div class="selection-container">
-          <h4>Auswahl</h4>
-          <RadialSeasonMenu @selection-changed="toggleSelection" />
+        <div class="radial-menus-container">
+          <div class="menu-wrapper">
+            <h4>Jahreszeiten</h4>
+            <RadialSeasonMenu />
+          </div>
+          
+          <div class="menu-wrapper">
+            <h4>Jahre</h4>
+            <div class="placeholder-circle">Jahres-Menü</div>
+          </div>
         </div>
 
-        <div class="table-section">
-          <div class="header-with-icon">
-            <h4>Details</h4>
+        <div class="table-container">
+          <h4>Details</h4>
+          <div class="placeholder-table">
+            Hier kommt die Tabelle (Jahr, Tmin, Tmax)
           </div>
-          <StationDetailsTable 
-            :selections="activeSelections" 
-            :data="stationData" 
-          />
         </div>
+
       </aside>
 
       <section class="right-column">
         <div class="chart-container">
-          <TemperatureChart 
-            :selections="activeSelections" 
-            :data="stationData" 
-          />
+          <TemperatureChart />
         </div>
       </section>
 
@@ -121,100 +70,64 @@ const goBackToSearch = () => {
 
 <style scoped>
 .analysis-view-container {
-  padding: 1rem 2rem;
+  padding: 2rem;
   max-width: 1600px;
   margin: 0 auto;
-  height: calc(100vh - 2rem);
-  display: flex;
-  flex-direction: column;
 }
+
 
 .content-grid {
   display: grid;
-  grid-template-columns: 350px 1fr; 
-  gap: 2rem;
-  flex: 1;
-  min-height: 0;
-  width: 100%;
+  grid-template-columns: 1fr 2.5fr; 
+  gap: 2.5rem;
+  align-items: start;
 }
 
 .left-column {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  height: 100%; 
-  min-height: 0; 
-  overflow: hidden;
-}
-
-.table-section {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.right-column {
-  background-color: rgba(0, 0, 0, 0.85);
-  border: 1px solid #545454;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-}
-
-.chart-container {
-  width: 100%;
-  flex: 1;
-  position: relative;
-  min-height: 0;
+  gap: 1.5rem;
 }
 
 .section-title {
   font-size: 1.25rem;
   margin: 0;
-  color: #ffffff;
+  color: #333;
 }
 
 .station-info-box {
-  border: 1px solid #545454;
-  padding: 0.5rem 1rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .station-info-box h3 {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.1rem;
+  margin: 0 0 0.75rem 0;
+  font-size: 1.2rem;
 }
 
 .station-info-box p {
-  margin: 0.15rem 0;
-  font-size: 0.9rem;
-  color: #ffffff;
+  margin: 0.25rem 0;
+  color: #475569;
 }
 
 .btn-back {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
-  background: linear-gradient(90deg, #004aad, #cb6ce6);
+  padding: 0.75rem 1rem;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
-  color: #ffffff;
+  color: #334155;
   transition: all 0.2s;
   text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
 }
 
 .btn-back:hover {
-  opacity: 0.8;
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
 }
 
 .radial-menus-container {
@@ -238,132 +151,41 @@ const goBackToSearch = () => {
   color: #64748b;
 }
 
-.table-container::-webkit-scrollbar {
-  width: 6px;
-}
-.table-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-.table-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  transition: background 0.3s;
-}
-.table-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+.right-column {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
-.state-overlay {
-  flex: 1;
+.chart-container {
+  width: 100%;
+  min-height: 600px; 
+}
+
+/* Platzhalter */
+.placeholder-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  border: 2px dashed #cbd5e1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  color: white;
+  font-size: 0.8rem;
+  color: #64748b;
 }
 
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #cb6ce6;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-.error-content {
-  background: rgba(255, 0, 0, 0.1);
-  border: 1px solid #ef4444;
-  padding: 2rem;
-  border-radius: 12px;
+.placeholder-table {
+  height: 250px;
+  background-color: #f1f5f9;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-}
-
-.error-content h2,
-.error-content p {
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.error-content button {
-  margin-top: 0;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@media screen and (min-width: 601px) and (max-width: 1024px) {
-  .analysis-view-container {
-    height: auto !important;
-    min-height: 100vh;
-  }
-
-  .content-grid {
-    display: flex !important;
-    flex-direction: column;
-    gap: 2rem;
-  }
-
-  .left-column {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    height: auto !important;
-    position: relative;
-  }
-
-  .left-column > * {
-    grid-column: 1;
-  }
-
-  .left-column > .table-section {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    width: calc(50% - 0.75rem);
-    height: 100% !important;
-    margin-top: 0 !important;
-  }
-
-  .right-column {
-    width: 100%;
-    height: 450px !important;
-    margin-top: 1rem;
-  }
-}
-
-@media screen and (max-width: 600px) {
-  .analysis-view-container {
-    height: auto !important;
-  }
-
-  .content-grid {
-    display: flex !important;
-    flex-direction: column;
-  }
-
-  .left-column {
-    display: flex !important;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .table-section {
-    height: 400px !important;
-  }
-
-  .right-column {
-    height: 400px !important;
-    min-height: 400px !important;
-    display: flex !important;
-    flex-direction: column;
-    margin-top: 1rem;
-  }
+  justify-content: center;
+  color: #64748b;
 }
 </style>
