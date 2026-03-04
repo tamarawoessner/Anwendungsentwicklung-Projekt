@@ -7,8 +7,9 @@ git clone https://github.com/tamarawoessner/Anwendungsentwicklung-Projekt/
 3) Umgebungsdatei anlegen
 Erstelle eine .env auf Basis von .env.example und ändere das Passwort
 
-4) DB-Init-Datei ausführbar machen: 
-  chmod +x db/init/02_restore.sh
+4) Zeilenenden normalisieren (unter Windows)
+  git add --renormalize .
+  git commit -m "Normalize line endings"  # optional, falls Änderungen angezeigt werden
 
 5) Backend starten
   docker compose pull
