@@ -1,17 +1,25 @@
 <script setup lang="ts">
+import type { Station } from '../App.vue';
+
+defineProps<{
+    station?: Station
+}>();
 </script>
 
 <template>
-    <div class="nearby-card">
+    <div class="nearby-card" :class="{ 'is-skeleton': !station }">
         <div class="card-header">
-            <span class="stationid">#GME00105229</span>
-            <div class="top-right">
+            <span class="stationid" v-if="station">#{{ station.station_id }}</span>
+            <span class="stationid" v-else>#---</span>
+
+            <div class="top-right" v-if="station">
                 <img src="../assets/distance.png" alt="Distanz" class="small-icon">
-                <span>6 km</span>
+                <span>{{ station.distance_km.toFixed(1) }} km</span>
             </div>
         </div>
         <div class="card-body">
-            <h3 class="station-title">Villingen-Schwenningen</h3>
+            <h3 class="station-title" v-if="station">{{ station.name || station.station_id }}</h3>
+            <h3 class="station-title skeleton-text" v-else>Warten auf Suche...</h3>
         </div>
     </div>
 </template>
@@ -70,5 +78,23 @@
 .small-icon {
     width: 20px;
     height: auto;
+}
+
+.is-skeleton {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.is-skeleton:hover {
+    transform: none;
+    box-shadow: none;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.skeleton-text {
+    color: #94a3b8;
+    font-style: italic;
+    font-weight: 400;
 }
 </style>
