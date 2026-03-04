@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query
 from psycopg import Error as PsycopgError
 
-from api.schemas.station_data import StationDataRequest, StationDataResponse
-from infrastructure.db.connection import connect_to_db
-from application.station_data_service import get_station_data
+from app.api.schemas.station_data import StationDataRequest, StationDataResponse
+from app.infrastructure.db.connection import connect_to_db
+from app.application.station_data_service import get_station_data
 
 router = APIRouter(prefix="/stations", tags=["station-data"])
 
