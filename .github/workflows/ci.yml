@@ -27,7 +27,7 @@ jobs:
 
       - name: Run tests + coverage
         run: |
-          coverage run -m pytest
+          coverage run -m pytest ../tests 
           coverage report -m
 
       - name: Coverage gate (warn only)
