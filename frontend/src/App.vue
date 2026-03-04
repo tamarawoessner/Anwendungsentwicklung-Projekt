@@ -73,8 +73,11 @@ const handleSearch = async (payload: SearchParams) => {
 <style scoped>
 .app-layout {
   display: flex;
-  min-height: 100vh;
-  width: 100vw;
+  min-height: 100vh; 
+  min-height: 100dvh;  
+  width: 100%;     
+  max-width: 100%;
+  overflow-x: hidden;
   background-color: #0b1120; 
   color: white;
   font-family: sans-serif;
@@ -106,5 +109,12 @@ const handleSearch = async (payload: SearchParams) => {
 
 .nearby-header{
   margin-left: 15px;
+}
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 </style>
