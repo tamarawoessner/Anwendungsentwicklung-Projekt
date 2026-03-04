@@ -1,25 +1,52 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import type { StationMeta } from '../types/index';
 import TemperatureChart from '../components/TemperatureChart.vue'; 
 import RadialSeasonMenu from '../components/RadialSeasonMenu.vue';
 import StationDetailsTable from '../components/StationDetailsTable.vue';
 
 const router = useRouter();
 
-const currentStation = ref<StationMeta>({
-  id: 'GME00105229',
-  name: 'Villingen-Schwenningen',
-  distanceKm: 6,
-  period: '1879-2025'
+const currentStation = ref<any>(null);
+
+/*onMounted(() => {
+  if (history.state && history.state.stationData) {
+    currentStation.value = history.state.stationData;
+
+    fetchStationData();
+  } else {
+    console.warn("Keine Stationsdaten gefunden. Gehe zurück zur Suche.");
+    router.push({ name: 'home' });
+  }
+})*/
+
+onMounted(() => {
+  if (history.state && history.state.stationData) {
+    // Der echte Weg: Wenn die Suche später fertig ist, nehmen wir die echten Daten
+    currentStation.value = history.state.stationData;
+    fetchStationData(); 
+  } else {
+    // TEMPORÄRER WORKAROUND FÜR DICH ZUM TESTEN:
+    console.warn("Keine echten Router-Daten gefunden! Lade Dummy-Station zum Testen.");
+    
+    // Wir setzen hier einfach eine Station hart rein, die es im Backend gibt
+    currentStation.value = {
+      id: 'GME00122842', // Achte darauf, dass diese ID in eurer Datenbank existiert!
+      name: 'Villingen-Schwenningen (Test-Modus)',
+      distanceKm: 6,
+      period: '1970-2025'
+    };
+    
+    fetchStationData(); // Und laden die API trotzdem!
+  }
 });
 
 const activeSelections = ref<string[]>(['Ganzes Jahr']);
+const fetchedStationData = ref<any>(null);
+const isLoading = ref(false);
 
 const toggleSelection = (bereich: string) => {
   const index = activeSelections.value.indexOf(bereich);
-  
   if (index > -1) {
     activeSelections.value.splice(index, 1);
   } else {
@@ -30,6 +57,63 @@ const toggleSelection = (bereich: string) => {
 const goBackToSearch = () => {
   router.push({ name: 'home' }); 
 };
+
+const buildRequestPayload = () => {
+  const selectionObj: Record<string, any> = {
+    year: null, winter: null, spring: null, summer: null, autumn: null
+  };
+
+  const map: Record<string, any> = {
+    'year': {both: 'Ganzes Jahr', min: 'Ganzes Jahr-kalt', max: 'Ganzes Jahr-warm'},
+    'winter': {both: 'Winter', min: 'Winter-kalt', max: 'Winter-warm'},
+    'spring': {both: 'Frühling', min: 'Frühling-Kalt', max: 'Frühling-Warm'},
+    'summer': {both: 'Sommer', min: 'Sommer-Kalt', max: 'Sommer-Warm'},
+    'autumn': {both: 'Herbst', min: 'Herbst-Kalt', max: 'Herbst-Warm'}
+  }
+
+  for (const [key, mapping] of Object.entries(map)) {
+    const tmin = activeSelections.value.includes(mapping.both) || activeSelections.value.includes(mapping.min);
+    const tmax = activeSelections.value.includes(mapping.both) || activeSelections.value.includes(mapping.max);
+    
+    if (tmin || tmax) {
+      selectionObj[key] = { tmin, tmax };
+    }
+  }
+
+  return { selection: selectionObj };
+};
+
+const fetchStationData = async () => {
+  if (activeSelections.value.length === 0) {
+    fetchedStationData.value = null;
+    return;
+  }
+
+  isLoading.value = true;
+  const payload = buildRequestPayload();
+
+  try {
+    const [startYear, endYear] = currentStation.value.period.split('-');
+    const url = `http://localhost:8000/stations/${currentStation.value.id}/data?start_year=${startYear}&end_year=${endYear}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error(`Netzwerk-Antwort war nicht ok (Status: ${res.status})`);
+    
+    const data = await res.json();
+    fetchedStationData.value = data;
+  } catch (err) {
+    console.error("Fehler beim Laden der API:", err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+watch(activeSelections, fetchStationData, { deep: true });
+
 </script>
 
 <template>
@@ -41,7 +125,7 @@ const goBackToSearch = () => {
         
         <h2 class="section-title">Ausgewählte Station 📍</h2>
 
-      <div class="station-info-box">
+      <div class="station-info-box" v-if="currentStation">
         <h3>{{ currentStation.name }}</h3>
         <p class="station-id">#{{ currentStation.id }}</p>
         <div class="station-details">
@@ -67,13 +151,13 @@ const goBackToSearch = () => {
           <div class="header-with-icon">
             <h4>Details</h4>
           </div>
-          <StationDetailsTable :selections="activeSelections" />
+          <StationDetailsTable :selections="activeSelections" :data="fetchedStationData" />
         </div>
       </aside>
 
       <section class="right-column">
         <div class="chart-container">
-          <TemperatureChart :selections="activeSelections" />
+          <TemperatureChart :selections="activeSelections" :data="fetchedStationData" />
         </div>
       </section>
 
