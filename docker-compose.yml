@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16
+    platform: linux/amd64
     container_name: ghcn-db
     environment:
       POSTGRES_DB: app
@@ -17,6 +18,7 @@ services:
     ports:
       - "5432:5432"
   backend:
+    platform: linux/amd64
     image: ghcr.io/tamarawoessner/anwendungsentwicklung-projekt-backend:latest
     container_name: ghcn-backend
     environment:
