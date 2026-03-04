@@ -119,7 +119,7 @@ def read_location_for_all_stations(conn):
 
 
 if __name__ == "__main__":
-    from infrastructure.db.connection import connect_to_db
+    from app.infrastructure.db.connection import connect_to_db
 
     conn = connect_to_db()
     print(read_years_for_all_stations(conn))

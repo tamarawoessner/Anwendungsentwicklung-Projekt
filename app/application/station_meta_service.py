@@ -1,4 +1,4 @@
-from infrastructure.db.station_repository import (
+from app.infrastructure.db.station_repository import (
     read_location_for_station,
     read_years_for_station,
 )
