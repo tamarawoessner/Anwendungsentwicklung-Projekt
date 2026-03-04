@@ -1,12 +1,54 @@
 <script setup lang="ts">
-import Sidebar from './components/Sidebar.vue';
+import { ref } from 'vue';
+import Sidebar, { type SearchParams } from './components/Sidebar.vue';
 import NearbyCard from './components/NearbyCard.vue';
+
+export interface Station {
+  station_id: string;
+  lat: number;
+  lon: number;
+  distance_km: number;
+  start_year: number;
+  end_year: number;
+}
+
+const stations = ref<Station[]>([]);
+
+const handleSearch = async (payload: SearchParams) => {
+  const apiPayload = {
+    lat: payload.lat,
+    lon: payload.lng,
+    radius_km: payload.radius,
+    limit: payload.limit,
+    start_year: payload.startYear,
+    end_year: payload.endYear
+  };
+
+  try {
+    const response = await fetch('http://localhost:8000/stations/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(apiPayload)
+    });
+
+    if (!response.ok) throw new Error(`Fehler vom Server: Status ${response.status}`);
+
+    const data = await response.json();
+    
+    stations.value = data.stations; 
+
+    console.log(`BÄM! ${data.count} Stationen gefunden:`, stations.value);
+
+  } catch (error) {
+    console.error("Ohje, da ging was schief beim Abrufen:", error);
+  }
+};
 </script>
 
 <template>
   <div class="app-layout">
 
-    <Sidebar />
+    <Sidebar :stations="stations" @search="handleSearch" />
 
     <main class="map-area">
       <div class="map-wrapper">
@@ -24,16 +66,7 @@ import NearbyCard from './components/NearbyCard.vue';
           <NearbyCard />
         </div>
       </div>
-    
-
-    
-    
-    
-    
-    
-    
     </main>
-
   </div>
 </template>
 
@@ -71,13 +104,7 @@ import NearbyCard from './components/NearbyCard.vue';
   padding: 15px;
 }
 
-
-
-
 .nearby-header{
   margin-left: 15px;
 }
-
-
-
 </style>
