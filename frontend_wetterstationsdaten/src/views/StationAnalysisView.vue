@@ -1,21 +1,46 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import type { StationMeta } from '../types/index';
+import { apiService } from '../services/api';
+import type { StationMeta, WeatherDataPoint } from '../types/index';
 import TemperatureChart from '../components/TemperatureChart.vue'; 
 import RadialSeasonMenu from '../components/RadialSeasonMenu.vue';
 import StationDetailsTable from '../components/StationDetailsTable.vue';
 
 const router = useRouter();
 
-const currentStation = ref<StationMeta>({
-  id: 'GME00105229',
-  name: 'Villingen-Schwenningen',
-  distanceKm: 6,
-  period: '1879-2025'
-});
-
+const currentStation = ref<any>(null);
+const stationData = ref<any>(null);
+const weatherData = ref<WeatherDataPoint[]>([]);
+const isLoading = ref(true);
+const errorMessage = ref<string | null>(null);
 const activeSelections = ref<string[]>(['Ganzes Jahr']);
+
+const loadStationData = async () => {
+  isLoading.value = true;
+  errorMessage.value = null;
+try {
+    const stationId = 'GME00105229'; // Deine Test-ID
+    
+    // Wir rufen Metadaten UND Wetterdaten ab
+    const [meta, dataResponse] = await Promise.all([
+      apiService.getStationMeta(stationId),
+      apiService.getStationData(stationId)
+    ]);
+
+    currentStation.value = meta;
+    stationData.value = dataResponse;
+  } catch (err) {
+    errorMessage.value = "Verbindung zum Backend fehlgeschlagen. Läuft Docker?";
+    console.error("API Error:", err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  loadStationData();
+});
 
 const toggleSelection = (bereich: string) => {
   const index = activeSelections.value.indexOf(bereich);
@@ -35,26 +60,33 @@ const goBackToSearch = () => {
 <template>
   <div class="analysis-view-container">
     
-    <main class="content-grid">
+    <div v-if="isLoading" class="state-overlay">
+      <div class="spinner"></div>
+      <p>Daten werden von der Wetterstation abgerufen...</p>
+    </div>
+
+    <div v-else-if="errorMessage" class="state-overlay error">
+      <div class="error-content">
+        <h2>Ups! Etwas lief schief.</h2>
+        <p>{{ errorMessage }}</p>
+        <button @click="loadStationData" class="btn-back">Erneut versuchen</button>
+      </div>
+    </div>
+
+    <main v-else class="content-grid">
       
       <aside class="left-column">
-        
         <h2 class="section-title">Ausgewählte Station 📍</h2>
 
-      <div class="station-info-box">
-        <h3>{{ currentStation.name }}</h3>
-        <p class="station-id">#{{ currentStation.id }}</p>
-        <div class="station-details">
-          <p>Entfernung: {{ currentStation.distanceKm }}km</p>
-          <p>Zeitraum: {{ currentStation.period }}</p>
+        <div class="station-info-box" v-if="currentStation">
+          <h3>{{ currentStation.station.name }}</h3>
+          <p class="station-id">#{{ currentStation.station.station_id }}</p>
+          <div class="station-details">
+            <p>Zeitraum: {{ currentStation.availability.start_year }} - {{ currentStation.availability.end_year }}</p>
+          </div>
         </div>
-      </div>
 
         <button @click="goBackToSearch" class="btn-back">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
           andere Station wählen
         </button>
 
@@ -67,13 +99,19 @@ const goBackToSearch = () => {
           <div class="header-with-icon">
             <h4>Details</h4>
           </div>
-          <StationDetailsTable :selections="activeSelections" />
+          <StationDetailsTable 
+            :selections="activeSelections" 
+            :data="stationData" 
+          />
         </div>
       </aside>
 
       <section class="right-column">
         <div class="chart-container">
-          <TemperatureChart :selections="activeSelections" />
+          <TemperatureChart 
+            :selections="activeSelections" 
+            :data="stationData" 
+          />
         </div>
       </section>
 
@@ -213,6 +251,50 @@ const goBackToSearch = () => {
 }
 .table-container::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.state-overlay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #cb6ce6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.error-content {
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid #ef4444;
+  padding: 2rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.error-content h2,
+.error-content p {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.error-content button {
+  margin-top: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 @media screen and (min-width: 601px) and (max-width: 1024px) {
