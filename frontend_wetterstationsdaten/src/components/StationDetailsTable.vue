@@ -14,9 +14,7 @@
           <td>{{ row.year }}</td>
           
           <td v-for="sel in selections" :key="sel" :class="getColorClass(sel)">
-            {{ row.values[sel] !== null && row.values[sel] !== undefined 
-               ? row.values[sel].toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' °C' 
-               : '-' }}
+            {{ getValue(row, sel) !== null && getValue(row, sel) !== undefined ? getValue(row, sel).toLocaleString('de-DE') : '-' }}
           </td>
         </tr>
       </tbody>
@@ -26,67 +24,48 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { StationDataResponse } from '../types';
 
 const props = defineProps<{
   selections: string[],
-  data: StationDataResponse | null // Hier kommen die echten Daten rein
+  data?: any
 }>();
 
-// Mapping: Welche Auswahl-Bezeichnung gehört zu welchem Datenfeld im Backend?
-const getValFromData = (year: number, selection: string) => {
-  if (!props.data) return null;
-
-  // 1. Ganzes Jahr
-  if (selection === 'Ganzes Jahr') {
-    const point = props.data.year.data.find(p => p.year === year);
-    return point?.tmax_mean_c ?? null; // Wir nehmen hier den Max-Schnitt
-  }
-
-  // 2. Saisons (Backend nutzt englische Keys: WINTER, SPRING, SUMMER, AUTUMN)
-  const seasonMapping: Record<string, string> = {
-    'Winter': 'WINTER',
-    'Winter-Kalt': 'WINTER',
-    'Frühling': 'SPRING',
-    'Sommer': 'SUMMER',
-    'Sommer-Warm': 'SUMMER',
-    'Herbst': 'AUTUMN'
-  };
-
-  const apiSeasonKey = seasonMapping[selection];
-  if (apiSeasonKey && props.data.seasons[apiSeasonKey]) {
-    const point = props.data.seasons[apiSeasonKey].data.find(p => p.year === year);
-    
-    // Logik für "Kalt" vs "Warm"
-    if (selection.includes('Kalt')) return point?.tmin_mean_c ?? null;
-    return point?.tmax_mean_c ?? null;
-  }
-
-  return null;
-};
-
-// Berechnet die Tabellenzeilen dynamisch basierend auf den Props
+// Verwende echte Daten oder Dummy-Daten
 const tableData = computed(() => {
-  if (!props.data || !props.data.year || !props.data.year.data) {
-    console.log("Tabelle; Warte noch auf korrekte Datenstruktur...");
-  return [];
+  if (props.data?.year?.data && Array.isArray(props.data.year.data)) {
+    return props.data.year.data; // Echte Daten vom Backend
   }
 
-  // Wir nehmen alle Jahre, die das Backend liefert
-  return props.data.year.data.map(point => {
-    const year = point.year;
+  // Fallback: Dummy-Datenstruktur
+  return Array.from({ length: 50 }, (_, index) => {
+    const currentYear = 2024 - index;
     
-    // Wir bauen das "values" Objekt für jede Zeile zusammen
-    const values: Record<string, number | null> = {};
-    props.selections.forEach(sel => {
-      values[sel] = getValFromData(year, sel);
-    });
+    // SIMULATION EINER DATENLÜCKE
+    if (currentYear === 1999 || currentYear === 2000) {
+      return {
+        year: currentYear,
+        values: { 'Ganzes Jahr': null, 'Winter': null, 'Winter-Kalt': null, 'Sommer-Warm': null }
+      };
+    }
+
+    // SIMULATION DER NULL-GRAD-FALLE
+    if (currentYear === 1995) {
+       return {
+        year: currentYear,
+        values: { 'Ganzes Jahr': 12.0, 'Winter': 0, 'Winter-Kalt': -4.5, 'Sommer-Warm': 30.0 }
+      };
+    }
 
     return {
-      year,
-      values
+      year: currentYear,
+      values: {
+        'Ganzes Jahr': +(10 + Math.random() * 5).toFixed(1),
+        'Winter': +(-2 + Math.random() * 5).toFixed(1),
+        'Winter-Kalt': +(-10 + Math.random() * 8).toFixed(1),
+        'Sommer-Warm': +(28 + Math.random() * 8).toFixed(1)
+      }
     };
-  }).sort((a, b) => b.year - a.year); // Neueste Jahre oben
+  });
 });
 
 const getColorClass = (selection: string) => {
@@ -94,14 +73,15 @@ const getColorClass = (selection: string) => {
   if (selection.includes('Warm') || selection.includes('Sommer')) return 'val-warm';
   return 'val-neutral';
 };
+
+// Sichere Wertabruf mit Fallback
+const getValue = (row: any, sel: string) => {
+  if (!row?.values) return null;
+  return row.values[sel] ?? null;
+};
 </script>
 
 <style scoped>
-/* Dein bestehendes CSS bleibt komplett erhalten! */
-.val-cold { color: #60a5fa; } /* Blau für kalt */
-.val-warm { color: #f87171; } /* Rot für warm */
-.val-neutral { color: #ffffff; }
-
 .table-container {
   flex: 1; 
   min-height: 0; 
