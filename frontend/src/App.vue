@@ -3,7 +3,9 @@ import { ref } from 'vue';
 import Sidebar, { type SearchParams } from './components/Sidebar.vue';
 import NearbyCard from './components/NearbyCard.vue';
 
+
 export interface Station {
+  name: string;
   station_id: string;
   lat: number;
   lon: number;
@@ -60,11 +62,13 @@ const handleSearch = async (payload: SearchParams) => {
         <div class="nearby-header">
           <h2>Stationen in der Nähe</h2>
         </div>
-        <div class="nearby-wrapper">
-          <NearbyCard />
-          <NearbyCard />
-          <NearbyCard />
-        </div>
+          <div class="nearby-wrapper">
+  <NearbyCard 
+    v-for="i in 3" 
+    :key="stations?.[i - 1]?.station_id ?? `placeholder-${i}`" 
+    :station="stations[i - 1]" 
+  />
+</div>
       </div>
     </main>
   </div>

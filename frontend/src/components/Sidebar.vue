@@ -106,17 +106,23 @@ const triggerSearch = () => {
         <div class="transparent-container">
 
 <div class="stations-list-container">
-            <div 
-                class="stationcard-wrapper" 
-                v-for="station in stations" 
-                :key="station.station_id"
-            >
-                <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
-                <span class="station-name">{{ station.station_id }}</span>
-            </div>
-        </div>
+    
+    <div v-if="stations.length === 0" class="empty-state">
+        <span class="skeleton-text">Warten auf Suche...</span>
+    </div>
 
-            </div>
+    <template v-else>
+        <div 
+            class="stationcard-wrapper" 
+            v-for="station in stations" 
+            :key="station.station_id"
+        >
+            <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
+            <span class="station-name">{{ station.name || station.station_id }}</span>
+        </div>
+    </template>
+</div>
+        </div>
     </aside>
 </template>
 
@@ -344,25 +350,23 @@ h2{
   opacity: 1;
 }
 
-/* Positionierung für den Container */
 .filter-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-/* Das schwebende Menü */
 .filter-dropdown {
   position: absolute;
-  top: 100%; /* Direkt unter dem Icon */
-  right: 0;  /* Rechtsbündig ans Icon getackert */
+  top: 100%;
+  right: 0;  
   margin-top: 8px;
   background-color: #1e293b;
   border: 1px solid #475569;
   border-radius: 8px;
   padding: 8px 0;
   min-width: 150px;
-  z-index: 100; /* Damit es ÜBER der Liste liegt */
+  z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
@@ -386,10 +390,25 @@ h2{
   background-color: #334155;
 }
 
-/* So heben wir das aktuell ausgewählte Limit optisch hervor */
 .dropdown-item.active {
   color: #a855f7;
   font-weight: bold;
+}
+
+.empty-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.skeleton-text {
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 1.1rem;
 }
 
 </style>
