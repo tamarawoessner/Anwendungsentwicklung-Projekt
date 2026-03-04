@@ -1,6 +1,6 @@
 coverage==7.13.4
 fastapi==0.133.1
-psycopg-binary==3.3.2
+psycopg[binary]==3.3.2
 psycopg-pool==3.3.0
 pydantic==2.12.5
 pydantic_core==2.41.5

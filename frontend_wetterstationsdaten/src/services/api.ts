@@ -1,4 +1,4 @@
-/*import type { StationMetaResponse, StationDataResponse } from '../types';
+import type { StationMetaResponse, StationDataResponse } from '../types';
 
 const BASE_URL = 'http://localhost:8000';
 
@@ -15,7 +15,7 @@ export const apiService = {
     return response.json();
   }
 };
-*/
+/*
 // src/services/api.ts
 import type { StationMetaResponse, StationDataResponse } from '../types';
 
@@ -58,4 +58,4 @@ export const apiService = {
       }
     } as StationDataResponse;
   }
-};
+};*/
