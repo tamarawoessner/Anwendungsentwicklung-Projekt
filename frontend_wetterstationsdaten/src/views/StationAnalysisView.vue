@@ -1,13 +1,28 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { apiService } from '../services/api';
-import type { StationMeta, WeatherDataPoint } from '../types/index';
+import type { StationMetaResponse, StationDataResponse, StationMeta, WeatherDataPoint } from '../types/index';
 import TemperatureChart from '../components/TemperatureChart.vue'; 
 import RadialSeasonMenu from '../components/RadialSeasonMenu.vue';
 import StationDetailsTable from '../components/StationDetailsTable.vue';
 
 const router = useRouter();
+
+const BASE_URL = 'http://localhost:8000';
+
+const apiService = {
+  async getStationMeta(id: string): Promise<StationMetaResponse> {
+    const response = await fetch(`${BASE_URL}/stations/${id}/meta`);
+    if (!response.ok) throw new Error('Station-Metadaten konnten nicht geladen werden');
+    return response.json();
+  },
+
+  async getStationData(id: string): Promise<StationDataResponse> {
+    const response = await fetch(`${BASE_URL}/stations/${id}/data`); 
+    if (!response.ok) throw new Error('Wetterdaten konnten nicht geladen werden');
+    return response.json();
+  }
+};
 
 const currentStation = ref<any>(null);
 const stationData = ref<any>(null);
@@ -31,7 +46,7 @@ try {
     currentStation.value = meta;
     stationData.value = dataResponse;
   } catch (err) {
-    errorMessage.value = "Verbindung zum Backend fehlgeschlagen. Läuft Docker?";
+    errorMessage.value = "Verbindung zum Backend fehlgeschlagen";
     console.error("API Error:", err);
   } finally {
     isLoading.value = false;
