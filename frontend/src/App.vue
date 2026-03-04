@@ -73,7 +73,7 @@ const handleSearch = async (payload: SearchParams) => {
 <style scoped>
 .app-layout {
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
   width: 100vw;
   background-color: #0b1120; 
   color: white;
@@ -100,7 +100,7 @@ const handleSearch = async (payload: SearchParams) => {
 .nearby-wrapper {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 100px;
+  gap: clamp(20px, 5vw, 100px); 
   padding: 15px;
 }
 
