@@ -1,70 +1,118 @@
 <script setup lang="ts">
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js'
-import { Line } from 'vue-chartjs'
+import { ref, watch, onMounted } from 'vue';
+import Chart from 'chart.js/auto';
+import type { StationDataResponse } from '../types';
 
-// Chart.js Module registrieren
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-)
+const props = defineProps<{
+  selections: string[],
+  data: StationDataResponse | null // NEU: Die echten Daten
+}>();
 
-// Dummy-Daten für Diagramm
-const chartData = {
-  labels: ['1990', '1995', '2000', '2005', '2010', '2015', '2020'],
-  datasets: [
-    {
-      label: 'TMAX (Höchstwerte)',
-      backgroundColor: '#ef4444',
-      borderColor: '#ef4444',
-      data: [14.5, 15.2, 16.0, 15.8, 16.5, 17.1, 17.8],
-      tension: 0.3
-    },
-    {
-      label: 'TMIN (Tiefstwerte)',
-      backgroundColor: '#3b82f6',
-      borderColor: '#3b82f6',
-      data: [4.2, 4.8, 5.1, 5.0, 5.6, 6.2, 6.5],
-      tension: 0.3
+const chartCanvas = ref<HTMLCanvasElement | null>(null);
+let myChart: Chart | null = null;
+
+// Hilfsfunktion: Holt die Werte für eine bestimmte Auswahl (analog zur Tabelle)
+const getDatasetValues = (years: number[], selection: string) => {
+  if (!props.data) return [];
+
+  return years.map(year => {
+    // 1. Ganzes Jahr
+    if (selection === 'Ganzes Jahr') {
+      return props.data?.year.data.find(p => p.year === year)?.tmax_mean_c ?? null;
     }
-  ]
-}
 
-// Konfiguration für das Aussehen des Diagramms
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'bottom' as const
+    // 2. Saisons Mapping
+    const seasonMapping: Record<string, string> = {
+      'Winter': 'WINTER',
+      'Winter-Kalt': 'WINTER',
+      'Frühling': 'SPRING',
+      'Sommer': 'SUMMER',
+      'Sommer-Warm': 'SUMMER',
+      'Herbst': 'AUTUMN'
+    };
+
+    const apiKey = seasonMapping[selection];
+    if (apiKey && props.data?.seasons[apiKey]) {
+      const point = props.data.seasons[apiKey].data.find(p => p.year === year);
+      return selection.includes('Kalt') ? (point?.tmin_mean_c ?? null) : (point?.tmax_mean_c ?? null);
     }
+    return null;
+  });
+};
+
+const getColor = (selection: string) => {
+  if (selection.includes('Kalt') || selection.includes('Winter')) return '#38bdf8'; 
+  if (selection.includes('Warm') || selection.includes('Sommer')) return '#f87171'; 
+  return '#a78bfa';
+};
+
+const updateChart = () => {
+  if (!chartCanvas.value || !props.data) return;
+
+  if (myChart) {
+    myChart.destroy();
   }
-}
+
+  // Wir holen uns alle verfügbaren Jahre und sortieren sie aufsteigend für die Zeitachse
+  const labels = props.data.year.data.map(p => p.year).sort((a, b) => a - b);
+
+  const activeDatasets = props.selections.map(sel => ({
+    label: sel,
+    data: getDatasetValues(labels, sel),
+    borderColor: getColor(sel),
+    backgroundColor: getColor(sel),
+    tension: 0.3, // Macht die Kurve etwas geschmeidiger
+    spanGaps: false 
+  }));
+
+  myChart = new Chart(chartCanvas.value, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: activeDatasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { 
+          ticks: { color: '#94a3b8' }, 
+          grid: { color: 'rgba(255,255,255,0.1)' },
+          title: { display: true, text: 'Temperatur (°C)', color: '#ffffff' }
+        },
+        x: { 
+          ticks: { color: '#94a3b8' }, 
+          grid: { color: 'rgba(255,255,255,0.1)' } 
+        }
+      },
+      plugins: {
+        legend: { labels: { color: '#ffffff' } }
+      }
+    }
+  });
+};
+
+onMounted(() => {
+  updateChart();
+});
+
+// WICHTIG: Reagiere auf Änderungen der Auswahl UND der Daten
+watch([() => props.selections, () => props.data], () => {
+  updateChart();
+}, { deep: true });
+
 </script>
 
 <template>
-  <div class="chart-wrapper">
-    <Line :data="chartData" :options="chartOptions" />
+  <div class="chart-container">
+    <canvas ref="chartCanvas"></canvas>
   </div>
 </template>
 
 <style scoped>
-.chart-wrapper {
+.chart-container {
   position: relative;
-  height: 350px;
+  height: 100%;
   width: 100%;
 }
 </style>
