@@ -1,16 +1,59 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import type { StationMeta } from '../types/index';
+import type { StationMetaResponse, StationDataResponse, WeatherDataPoint } from '../types/index';
 import TemperatureChart from '../components/TemperatureChart.vue'; 
 import RadialSeasonMenu from '../components/RadialSeasonMenu.vue';
 
 const router = useRouter();
 
-const currentStation = ref<StationMeta>({
-  id: '10932',
-  name: 'Villingen-Schwenningen',
-  distanceKm: 5.2
+const BASE_URL = 'http://localhost:8000';
+
+const apiService = {
+  async getStationMeta(id: string): Promise<StationMetaResponse> {
+    const response = await fetch(`${BASE_URL}/stations/${id}/meta`);
+    if (!response.ok) throw new Error('Station-Metadaten konnten nicht geladen werden');
+    return response.json();
+  },
+
+  async getStationData(id: string): Promise<StationDataResponse> {
+    const response = await fetch(`${BASE_URL}/stations/${id}/data`); 
+    if (!response.ok) throw new Error('Wetterdaten konnten nicht geladen werden');
+    return response.json();
+  }
+};
+
+const currentStation = ref<any>(null);
+const stationData = ref<any>(null);
+const weatherData = ref<WeatherDataPoint[]>([]);
+const isLoading = ref(true);
+const errorMessage = ref<string | null>(null);
+const activeSelections = ref<string[]>(['Ganzes Jahr']);
+
+const loadStationData = async () => {
+  isLoading.value = true;
+  errorMessage.value = null;
+try {
+    const stationId = 'GME00105229'; // Deine Test-ID
+    
+    // Wir rufen Metadaten UND Wetterdaten ab
+    const [meta, dataResponse] = await Promise.all([
+      apiService.getStationMeta(stationId),
+      apiService.getStationData(stationId)
+    ]);
+
+    currentStation.value = meta;
+    stationData.value = dataResponse;
+  } catch (err) {
+    errorMessage.value = "Verbindung zum Backend fehlgeschlagen";
+    console.error("API Error:", err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  loadStationData();
 });
 
 const goBackToSearch = () => {
