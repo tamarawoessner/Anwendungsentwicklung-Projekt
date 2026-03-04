@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StationMap from './components/StationMap.vue';
 import { ref } from 'vue';
 import Sidebar, { type SearchParams } from './components/Sidebar.vue';
 import NearbyCard from './components/NearbyCard.vue';
@@ -15,8 +16,14 @@ export interface Station {
 }
 
 const stations = ref<Station[]>([]);
+const searchLat = ref<number | null>(null);
+const searchLng = ref<number | null>(null);
+const searchRadius = ref<number | null>(null);
 
 const handleSearch = async (payload: SearchParams) => {
+  searchLat.value = payload.lat;
+  searchLng.value = payload.lng;
+  searchRadius.value = payload.radius;
   const apiPayload = {
     lat: payload.lat,
     lon: payload.lng,
@@ -54,9 +61,13 @@ const handleSearch = async (payload: SearchParams) => {
 
     <main class="map-area">
       <div class="map-wrapper">
-        <div id="map-container">Platzhalter Karte
-        </div>
-      </div>
+    <StationMap 
+      :stations="stations" 
+      :center-lat="searchLat" 
+      :center-lng="searchLng" 
+      :radius-km="searchRadius" 
+    />
+</div>
 
       <div class="nearby-area">
         <div class="nearby-header">
@@ -121,4 +132,6 @@ html, body, #app {
   padding: 0;
   overflow-x: hidden;
 }
+
+
 </style>
