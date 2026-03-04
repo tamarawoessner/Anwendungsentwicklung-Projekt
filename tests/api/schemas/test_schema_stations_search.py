@@ -40,6 +40,7 @@ def test_station_search_response_parses():
         "stations": [
             {
                 "station_id": "A",
+                "name": "Alpha",
                 "lat": 0.0,
                 "lon": 0.0,
                 "distance_km": 0.0,

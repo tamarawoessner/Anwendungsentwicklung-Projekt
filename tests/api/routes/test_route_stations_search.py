@@ -19,6 +19,7 @@ def test_stations_search_happy_path_200():
         m_service.return_value = [
             {
                 "station_id": "A",
+                "name": "Alpha",
                 "lat": 0.0,
                 "lon": 0.0,
                 "distance_km": 0.0,
@@ -27,6 +28,7 @@ def test_stations_search_happy_path_200():
             },
             {
                 "station_id": "B",
+                "name": "Beta",
                 "lat": 0.0,
                 "lon": 1.0,
                 "distance_km": 111.0,
