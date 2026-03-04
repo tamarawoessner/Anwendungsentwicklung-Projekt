@@ -249,6 +249,7 @@ watch(activeSelections, fetchStationData, { deep: true });
   font-size: 0.9rem;
   background: linear-gradient(90deg, #004aad, #cb6ce6);
   border-radius: 6px;
+  border: none;
   cursor: pointer;
   font-weight: bold;
   color: #ffffff;
