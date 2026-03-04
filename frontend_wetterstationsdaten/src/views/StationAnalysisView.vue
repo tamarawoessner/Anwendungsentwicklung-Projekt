@@ -284,5 +284,10 @@ const goBackToSearch = () => {
     flex-direction: column;
     margin-top: 1rem;
   }
+  .table-container {
+    max-height: 320px; 
+    overflow-y: auto;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  }
 }
 </style>
