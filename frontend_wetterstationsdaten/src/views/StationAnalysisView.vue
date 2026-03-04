@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import type { StationMetaResponse, StationDataResponse, StationMeta, WeatherDataPoint } from '../types/index';
+import type { StationMetaResponse, StationDataResponse, WeatherDataPoint } from '../types/index';
 import TemperatureChart from '../components/TemperatureChart.vue'; 
 import RadialSeasonMenu from '../components/RadialSeasonMenu.vue';
 import StationDetailsTable from '../components/StationDetailsTable.vue';
