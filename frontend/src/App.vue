@@ -1,12 +1,54 @@
 <script setup lang="ts">
-import Sidebar from './components/Sidebar.vue';
+import { ref } from 'vue';
+import Sidebar, { type SearchParams } from './components/Sidebar.vue';
 import NearbyCard from './components/NearbyCard.vue';
+
+export interface Station {
+  station_id: string;
+  lat: number;
+  lon: number;
+  distance_km: number;
+  start_year: number;
+  end_year: number;
+}
+
+const stations = ref<Station[]>([]);
+
+const handleSearch = async (payload: SearchParams) => {
+  const apiPayload = {
+    lat: payload.lat,
+    lon: payload.lng,
+    radius_km: payload.radius,
+    limit: payload.limit,
+    start_year: payload.startYear,
+    end_year: payload.endYear
+  };
+
+  try {
+    const response = await fetch('http://localhost:8000/stations/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(apiPayload)
+    });
+
+    if (!response.ok) throw new Error(`Fehler vom Server: Status ${response.status}`);
+
+    const data = await response.json();
+    
+    stations.value = data.stations; 
+
+    console.log(`BÄM! ${data.count} Stationen gefunden:`, stations.value);
+
+  } catch (error) {
+    console.error("Ohje, da ging was schief beim Abrufen:", error);
+  }
+};
 </script>
 
 <template>
   <div class="app-layout">
 
-    <Sidebar />
+    <Sidebar :stations="stations" @search="handleSearch" />
 
     <main class="map-area">
       <div class="map-wrapper">
@@ -24,24 +66,18 @@ import NearbyCard from './components/NearbyCard.vue';
           <NearbyCard />
         </div>
       </div>
-    
-
-    
-    
-    
-    
-    
-    
     </main>
-
   </div>
 </template>
 
 <style scoped>
 .app-layout {
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh; 
+  min-height: 100dvh;  
+  width: 100%;     
+  max-width: 100%;
+  overflow-x: hidden;
   background-color: #0b1120; 
   color: white;
   font-family: sans-serif;
@@ -67,17 +103,18 @@ import NearbyCard from './components/NearbyCard.vue';
 .nearby-wrapper {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 100px;
+  gap: clamp(20px, 5vw, 100px); 
   padding: 15px;
 }
-
-
-
 
 .nearby-header{
   margin-left: 15px;
 }
 
-
-
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
 </style>

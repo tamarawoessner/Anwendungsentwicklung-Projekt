@@ -1,5 +1,5 @@
-from domain.geo import haversine_km
-from infrastructure.db.station_repository import (
+from app.domain.geo import haversine_km
+from app.infrastructure.db.station_repository import (
     read_location_for_all_stations,
     read_years_for_all_stations,
 )
@@ -41,6 +41,7 @@ def find_nearby_stations(
 
     for s in stations:
         sid = s.get("station_id")
+        name = s.get("name")
         s_lat = s.get("lat")
         s_lon = s.get("lon")
         if sid is None or s_lat is None or s_lon is None:
@@ -68,6 +69,7 @@ def find_nearby_stations(
         enriched.append(
             {
                 "station_id": sid,
+                "name": name or "",
                 "lat": s_lat,
                 "lon": s_lon,
                 "distance_km": round(d_km, 3),
@@ -82,7 +84,7 @@ def find_nearby_stations(
 
 if __name__ == "__main__":
     import json
-    from infrastructure.db.connection import connect_to_db
+    from app.infrastructure.db.connection import connect_to_db
 
     conn = connect_to_db()
     result = find_nearby_stations(
