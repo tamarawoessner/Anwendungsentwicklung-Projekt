@@ -113,7 +113,7 @@ def read_location_for_all_stations(conn):
         with conn.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT DISTINCT s.station_id, s.lat, s.lon
+                SELECT DISTINCT s.station_id, s.name, s.lat, s.lon
                 FROM ghcn.stations s
                 JOIN ghcn.inventory i
                   ON i.station_id = s.station_id
@@ -127,10 +127,11 @@ def read_location_for_all_stations(conn):
                 return [
                     {
                         "station_id": sid,
+                        "name": (name or "").strip(),
                         "lat": float(lat) if lat is not None else None,
                         "lon": float(lon) if lon is not None else None,
                     }
-                    for (sid, lat, lon) in rows
+                    for (sid, name, lat, lon) in rows
                 ]
             else:
                 return []

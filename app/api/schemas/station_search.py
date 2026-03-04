@@ -33,6 +33,7 @@ class StationSearchRequest(BaseModel):
 
 class StationSearchResult(BaseModel):
     station_id: str
+    name: str
     lat: float
     lon: float
     distance_km: float

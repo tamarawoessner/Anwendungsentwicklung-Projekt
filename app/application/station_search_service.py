@@ -41,6 +41,7 @@ def find_nearby_stations(
 
     for s in stations:
         sid = s.get("station_id")
+        name = s.get("name")
         s_lat = s.get("lat")
         s_lon = s.get("lon")
         if sid is None or s_lat is None or s_lon is None:
@@ -68,6 +69,7 @@ def find_nearby_stations(
         enriched.append(
             {
                 "station_id": sid,
+                "name": name or "",
                 "lat": s_lat,
                 "lon": s_lon,
                 "distance_km": round(d_km, 3),
