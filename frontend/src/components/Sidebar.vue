@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import type { Station } from '../App.vue';
 
 export interface SearchParams {
@@ -16,26 +16,109 @@ const lng = ref<number | null>(null);
 const radius = ref<number>(20);
 const startYear = ref<number | null>(null);
 const endYear = ref<number | null>(null);
-const limit = ref<number>(50);
+const limit = ref<number>(10);
+const formError = ref<string | null>(null);
 const isFilterMenuOpen = ref(false);
+const filterWrapperRef = ref<HTMLElement | null>(null);
+const ALL_LIMIT = 500;
+const topLimitOptions = Array.from({ length: 10 }, (_, i) => i + 1);
+
+const hasCoordinateInput = computed(() => {
+  const latValue = Number(lat.value);
+  const lngValue = Number(lng.value);
+  return Number.isFinite(latValue) && Number.isFinite(lngValue);
+});
+
+const clampRadius = (value: number) => Math.min(100, Math.max(1, Math.round(value)));
+
+const normalizeRadius = () => {
+  const parsed = Number(radius.value);
+  radius.value = Number.isFinite(parsed) ? clampRadius(parsed) : 20;
+};
+
+const clearFormError = () => {
+  formError.value = null;
+};
+
+const blockInvalidCoordinateChars = (event: KeyboardEvent) => {
+  if (event.key === 'e' || event.key === 'E' || event.key === '+') {
+    event.preventDefault();
+  }
+};
+
+const blockInvalidCoordinatePaste = (event: ClipboardEvent) => {
+  const pastedText = event.clipboardData?.getData('text') ?? '';
+  if (/[eE+]/.test(pastedText)) {
+    event.preventDefault();
+  }
+};
+
+const blockInvalidRadiusChars = (event: KeyboardEvent) => {
+  if (event.key === 'e' || event.key === 'E' || event.key === '+' || event.key === '-') {
+    event.preventDefault();
+  }
+};
+
+const blockInvalidRadiusPaste = (event: ClipboardEvent) => {
+  const pastedText = event.clipboardData?.getData('text') ?? '';
+  if (/[eE+-]/.test(pastedText)) {
+    event.preventDefault();
+  }
+};
 
 const emit = defineEmits<{
   (e: 'search', payload: SearchParams): void
 }>();
 defineProps<{
-  stations: Station[]
+  stations: Station[];
+  resultsCount: number | null;
 }>();
 
 const setLimit = (newLimit: number) => {
-  limit.value = newLimit;
+  const clampedLimit = Math.min(ALL_LIMIT, Math.max(1, Math.round(newLimit)));
+  limit.value = clampedLimit;
   isFilterMenuOpen.value = false;
-  triggerSearch();
+  if (hasCoordinateInput.value) {
+    triggerSearch();
+  }
 };
 
+const handleOutsideClick = (event: MouseEvent) => {
+  if (!isFilterMenuOpen.value) return;
+  const target = event.target as Node | null;
+  if (!target) return;
+  if (!filterWrapperRef.value?.contains(target)) {
+    isFilterMenuOpen.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleOutsideClick);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleOutsideClick);
+});
+
 const triggerSearch = () => {
+  normalizeRadius();
+
+  const latValue = Number(lat.value);
+  const lngValue = Number(lng.value);
+  if (!Number.isFinite(latValue) || !Number.isFinite(lngValue)) {
+    formError.value = 'Bitte Breiten- und Laengengrad ausfuellen.';
+    return;
+  }
+
+  if (latValue < -90 || latValue > 90 || lngValue < -180 || lngValue > 180) {
+    formError.value = 'Ungueltige Koordinaten: Breite -90 bis 90, Laenge -180 bis 180.';
+    return;
+  }
+
+  formError.value = null;
   const paket = {
-    lat: lat.value,
-    lng: lng.value,
+    lat: latValue,
+    lng: lngValue,
     radius: Number(radius.value),
     startYear: startYear.value,
     endYear: endYear.value,
@@ -56,19 +139,53 @@ const triggerSearch = () => {
             <div class="transparent-container">
     <div class="input-group">
         <label for="latitude">Breitengrad</label>
-        <input type="number" id="latitude" v-model="lat" step="any" placeholder="48.06125" class="dark-input" />
+        <input
+          type="number"
+          id="latitude"
+          v-model="lat"
+          step="any"
+          min="-90"
+          max="90"
+          placeholder="48.06125"
+          class="dark-input"
+          @keydown="blockInvalidCoordinateChars"
+          @paste="blockInvalidCoordinatePaste"
+          @input="clearFormError"
+        >
     </div>
 
     <div class="input-group">
         <label for="longitude">Längengrad</label>
-        <input type="number" id="longitude" v-model="lng" step="any" placeholder="8.53461" class="dark-input">
+        <input
+          type="number"
+          id="longitude"
+          v-model="lng"
+          step="any"
+          min="-180"
+          max="180"
+          placeholder="8.53461"
+          class="dark-input"
+          @keydown="blockInvalidCoordinateChars"
+          @paste="blockInvalidCoordinatePaste"
+          @input="clearFormError"
+        >
     </div>
 
     <div class="input-group">
         <label for="radius">Radius (in km)</label>
         <div class="slider-wrapper">
-            <input type="range" id="radius" v-model="radius" min="1" max="100" class="dark-slider">
-            <input type="number" v-model="radius" class="slider-value" min="1" max="100">
+            <input type="range" id="radius" v-model="radius" min="1" max="100" class="dark-slider" @input="normalizeRadius">
+            <input
+              type="number"
+              v-model="radius"
+              class="slider-value"
+              min="1"
+              max="100"
+              @keydown="blockInvalidRadiusChars"
+              @paste="blockInvalidRadiusPaste"
+              @input="normalizeRadius"
+              @blur="normalizeRadius"
+            >
         </div>
     </div>
 
@@ -84,21 +201,43 @@ const triggerSearch = () => {
         </div>
     </div>
 
-    <button class="search-button" @click="triggerSearch">Stationen suchen</button>
+    <p v-if="formError" class="form-error">{{ formError }}</p>
+    <button class="search-button" :disabled="!hasCoordinateInput" @click="triggerSearch">Stationen suchen</button>
 </div>
 
         <div class="subheader-group">
-    <h2>verfügbare Wetterstationen</h2>
+    <div class="subheader-texts">
+      <h2>verfügbare Wetterstationen</h2>
+      <p class="results-count">Anzahl der Ergebnisse: {{ resultsCount ?? '-' }}</p>
+    </div>
     
-    <div class="filter-wrapper">
+    <div class="filter-wrapper" ref="filterWrapperRef">
         <img src="../assets/filter.png" alt="Filter-Icon" @click="isFilterMenuOpen = !isFilterMenuOpen">
 
         <div class="filter-dropdown" v-if="isFilterMenuOpen">
-            <div class="dropdown-header">Max. Treffer:</div>
-            <div class="dropdown-item" :class="{ active: limit === 10 }" @click="setLimit(10)">10 Stationen</div>
-            <div class="dropdown-item" :class="{ active: limit === 20 }" @click="setLimit(20)">20 Stationen</div>
-            <div class="dropdown-item" :class="{ active: limit === 50 }" @click="setLimit(50)">50 Stationen</div>
-            <div class="dropdown-item" :class="{ active: limit === 100 }" @click="setLimit(100)">100 Stationen</div>
+            <div class="dropdown-header">
+              {{ limit === ALL_LIMIT ? 'Alle Stationen' : `Top ${limit} Station${limit === 1 ? '' : 'en'}` }}
+            </div>
+            <div class="limit-grid">
+              <button
+                v-for="option in topLimitOptions"
+                :key="option"
+                type="button"
+                class="limit-chip"
+                :class="{ active: limit === option }"
+                @click="setLimit(option)"
+              >
+                Top {{ option }}
+              </button>
+              <button
+                type="button"
+                class="limit-chip limit-chip-all"
+                :class="{ active: limit === ALL_LIMIT }"
+                @click="setLimit(ALL_LIMIT)"
+              >
+                Alle
+              </button>
+            </div>
         </div>
     </div>
 </div>
@@ -245,6 +384,18 @@ label {
   background-color: #e2e8f0;
 }
 
+.search-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-error {
+  margin: 2px 0 0;
+  color: #fda4af;
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
 .header-group {
   display: flex;
   flex-direction: row;
@@ -272,11 +423,12 @@ label {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 25px;
 }
 
 h2{
   font-size: 1.4rem;
+  margin: 0;
+  line-height: 1.1;
 }
 
 .stations-list-container {
@@ -331,12 +483,27 @@ h2{
 }
 
 .subheader-group {
-  padding-left: 15px;
+  padding: 0 0 0 15px;
   display: flex;
   flex-direction: row;
-  align-items: center; 
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 15px;         
-  position: relative; 
+  position: relative;
+  margin-top: 15px;
+}
+
+.subheader-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.results-count {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1;
+  color: #94a3b8;
 }
 
 .subheader-group img{
@@ -378,20 +545,38 @@ h2{
   margin-bottom: 4px;
 }
 
-.dropdown-item {
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 0.95rem;
+.limit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.limit-chip {
+  border: 1px solid #475569;
+  background-color: transparent;
   color: #e2e8f0;
-  transition: background 0.2s;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
-.dropdown-item:hover {
+.limit-chip-all {
+  grid-column: 1 / -1;
+}
+
+.limit-chip:hover {
   background-color: #334155;
+  border-color: #64748b;
 }
 
-.dropdown-item.active {
+.limit-chip.active {
   color: #a855f7;
+  border-color: #a855f7;
   font-weight: bold;
 }
 
