@@ -1,0 +1,206 @@
+import pytest
+from unittest.mock import patch
+
+from app.application.station_data_service import (
+    _flags_to_element,
+    _normalize_season_key,
+    get_station_data,
+)
+
+
+@pytest.mark.parametrize(
+    "selection, expected",
+    [
+        (None, None),
+        ("tmin", "TMIN"),
+        ("TMAX", "TMAX"),
+        (" both ", "BOTH"),
+        ("invalid", None),
+        ({"tmin": True, "tmax": True}, "BOTH"),
+        ({"tmin": True, "tmax": False}, "TMIN"),
+        ({"tmin": False, "tmax": True}, "TMAX"),
+        ({"tmin": False, "tmax": False}, None),
+        ({}, None),
+    ],
+)
+def test_flags_to_element(selection, expected):
+    assert _flags_to_element(selection) == expected
+
+
+@pytest.mark.parametrize(
+    "key, expected",
+    [
+        ("winter", "WINTER"),
+        ("WINTER", "WINTER"),
+        (" spring ", "SPRING"),
+        ("SUMMER", "SUMMER"),
+        ("autumn", "AUTUMN"),
+        ("fall", "AUTUMN"),
+        ("unknown", None),
+        ("", None),
+        (None, None),
+    ],
+)
+def test_normalize_season_key(key, expected):
+    assert _normalize_season_key(key) == expected
+
+
+def test_get_station_data_requires_station_id():
+    with pytest.raises(ValueError, match="station_id is required"):
+        get_station_data(conn=None, station_id="  ", start_year=2000, end_year=2001)
+
+
+def test_get_station_data_validates_year_range():
+    with pytest.raises(ValueError, match="start_year must be <= end_year"):
+        get_station_data(conn=None, station_id="X", start_year=2002, end_year=2001)
+
+
+@patch("app.application.station_data_service.read_station_data_seasons")
+@patch("app.application.station_data_service.read_station_data_year")
+@patch("app.application.station_data_service.read_years_for_station")
+@patch("app.application.station_data_service.read_location_for_station")
+def test_default_year_requested_is_both_and_reads_year_data(
+    mock_loc, mock_years, mock_read_year, mock_read_seasons
+):
+    mock_loc.return_value = {"station_id": "X"}
+    mock_years.return_value = {"start_year": 1900, "end_year": 2000}
+    mock_read_year.return_value = [{"year": 2000, "tmin": 1.0, "tmax": 2.0}]
+    mock_read_seasons.return_value = []  # not used
+
+    # selection without "year" triggers default BOTH
+    res = get_station_data(
+        conn=None,
+        station_id="X",
+        start_year=2000,
+        end_year=2000,
+        selection={},  # no "year" key
+    )
+
+    assert res["year"]["element"] == "BOTH"
+    assert res["year"]["data"] == [{"year": 2000, "tmin": 1.0, "tmax": 2.0}]
+    mock_read_year.assert_called_once_with(
+        conn=None, station_id="X", start_year=2000, end_year=2000, element="BOTH"
+    )
+    mock_read_seasons.assert_not_called()
+
+
+@patch("app.application.station_data_service.read_station_data_seasons")
+@patch("app.application.station_data_service.read_station_data_year")
+@patch("app.application.station_data_service.read_years_for_station")
+@patch("app.application.station_data_service.read_location_for_station")
+def test_year_explicit_none_disables_year_block(
+    mock_loc, mock_years, mock_read_year, mock_read_seasons
+):
+    mock_loc.return_value = {"station_id": "X"}
+    mock_years.return_value = None
+
+    # year key present but value invalid/None -> element None -> should NOT call read_station_data_year
+    res = get_station_data(
+        conn=None,
+        station_id="X",
+        start_year=2000,
+        end_year=2001,
+        selection={"year": None},
+    )
+
+    assert res["year"]["element"] is None
+    assert res["year"]["data"] == []
+    mock_read_year.assert_not_called()
+    mock_read_seasons.assert_not_called()
+
+
+@patch("app.application.station_data_service.read_station_data_seasons")
+@patch("app.application.station_data_service.read_station_data_year")
+@patch("app.application.station_data_service.read_years_for_station")
+@patch("app.application.station_data_service.read_location_for_station")
+def test_year_explicit_tmin_calls_year_repo_with_tmin(
+    mock_loc, mock_years, mock_read_year, mock_read_seasons
+):
+    mock_loc.return_value = {"station_id": "X"}
+    mock_years.return_value = None
+    mock_read_year.return_value = []
+
+    res = get_station_data(
+        conn=None,
+        station_id="X",
+        start_year=2000,
+        end_year=2001,
+        selection={"year": {"tmin": True}},
+    )
+
+    assert res["year"]["element"] == "TMIN"
+    mock_read_year.assert_called_once_with(
+        conn=None, station_id="X", start_year=2000, end_year=2001, element="TMIN"
+    )
+    mock_read_seasons.assert_not_called()
+
+
+@patch("app.application.station_data_service.read_station_data_seasons")
+@patch("app.application.station_data_service.read_station_data_year")
+@patch("app.application.station_data_service.read_years_for_station")
+@patch("app.application.station_data_service.read_location_for_station")
+def test_seasons_only_valid_keys_and_elements_are_called(
+    mock_loc, mock_years, mock_read_year, mock_read_seasons
+):
+    mock_loc.return_value = {"station_id": "X"}
+    mock_years.return_value = None
+    mock_read_year.return_value = []
+
+    def seasons_side_effect(conn, station_id, start_year, end_year, season, element):
+        return [{"season": season, "element": element}]
+
+    mock_read_seasons.side_effect = seasons_side_effect
+
+    res = get_station_data(
+        conn=None,
+        station_id="X",
+        start_year=2000,
+        end_year=2001,
+        selection={
+            "year": "TMAX",
+            "winter": {"tmin": True},    # valid -> WINTER/TMIN
+            "spring": {"tmax": True},    # valid -> SPRING/TMAX
+            "summer": None,              # invalid element -> skipped
+            "autumn": "BOTH",            # valid -> AUTUMN/BOTH
+            "unknown": "BOTH",           # invalid season -> skipped
+        },
+    )
+
+    # Year
+    assert res["year"]["element"] == "TMAX"
+    mock_read_year.assert_called_once_with(
+        conn=None, station_id="X", start_year=2000, end_year=2001, element="TMAX"
+    )
+
+    # Seasons
+    assert set(res["seasons"].keys()) == {"WINTER", "SPRING", "AUTUMN"}
+    assert res["seasons"]["WINTER"]["element"] == "TMIN"
+    assert res["seasons"]["SPRING"]["element"] == "TMAX"
+    assert res["seasons"]["AUTUMN"]["element"] == "BOTH"
+
+    # Ensure repo was called exactly 3 times (summer/unknown skipped)
+    assert mock_read_seasons.call_count == 3
+
+
+@patch("app.application.station_data_service.read_station_data_seasons")
+@patch("app.application.station_data_service.read_station_data_year")
+@patch("app.application.station_data_service.read_years_for_station")
+@patch("app.application.station_data_service.read_location_for_station")
+def test_none_repo_returns_become_empty_lists(
+    mock_loc, mock_years, mock_read_year, mock_read_seasons
+):
+    mock_loc.return_value = {"station_id": "X"}
+    mock_years.return_value = None
+    mock_read_year.return_value = None
+    mock_read_seasons.return_value = None
+
+    res = get_station_data(
+        conn=None,
+        station_id="X",
+        start_year=2000,
+        end_year=2001,
+        selection={"year": "BOTH", "winter": "TMIN"},
+    )
+
+    assert res["year"]["data"] == []
+    assert res["seasons"]["WINTER"]["data"] == []
