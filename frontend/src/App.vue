@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import StationMap from './components/StationMap.vue';
-import { ref } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import Sidebar, { type SearchParams } from './components/Sidebar.vue';
 import NearbyCard from './components/NearbyCard.vue';
 
@@ -20,8 +20,42 @@ const resultsCount = ref<number | null>(null);
 const searchLat = ref<number | null>(null);
 const searchLng = ref<number | null>(null);
 const searchRadius = ref<number | null>(null);
+const hasSearched = ref<boolean>(false);
+
+const CARD_WIDTH = 300;
+const CARD_GAP = 24;
+const nearbyRef = ref<HTMLElement | null>(null);
+const containerWidth = ref(1200);
+let resizeObserver: ResizeObserver | null = null;
+
+const maxCardsFit = computed(() => {
+  if (containerWidth.value < CARD_WIDTH) return 1;
+  return Math.floor((containerWidth.value + CARD_GAP) / (CARD_WIDTH + CARD_GAP));
+});
+
+const cardsToDisplay = computed(() => {
+  const maxSlots = Math.min(maxCardsFit.value, 4);
+  if (!hasSearched.value) return 0;
+  return Math.min(stations.value.length, maxSlots);
+});
+
+onMounted(() => {
+  if (nearbyRef.value) {
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        containerWidth.value = entry.contentRect.width;
+      }
+    });
+    resizeObserver.observe(nearbyRef.value);
+  }
+});
+
+onUnmounted(() => {
+  resizeObserver?.disconnect();
+});
 
 const handleSearch = async (payload: SearchParams) => {
+  hasSearched.value = true;
   searchLat.value = payload.lat;
   searchLng.value = payload.lng;
   searchRadius.value = payload.radius;
@@ -60,7 +94,7 @@ const handleSearch = async (payload: SearchParams) => {
 <template>
   <div class="app-layout">
 
-    <Sidebar :stations="stations" :results-count="resultsCount" @search="handleSearch" />
+    <Sidebar :stations="stations" :results-count="resultsCount" :has-searched="hasSearched" @search="handleSearch" />
 
     <main class="map-area">
       <div class="map-wrapper">
@@ -72,13 +106,16 @@ const handleSearch = async (payload: SearchParams) => {
     />
 </div>
 
-      <div class="nearby-area">
-        <div class="nearby-header">
+      <div class="nearby-area" ref="nearbyRef">
+        <div class="nearby-header" v-if="cardsToDisplay > 0">
           <h2>Stationen in der Nähe</h2>
         </div>
-          <div class="nearby-wrapper">
+          <div v-if="hasSearched && stations.length === 0" class="no-results">
+            <span>Die Suche ergab keine Treffer. Versuche einen größeren Radius oder andere Kriterien.</span>
+          </div>
+          <div v-else-if="cardsToDisplay > 0" class="nearby-wrapper">
   <NearbyCard 
-    v-for="i in 3" 
+    v-for="i in cardsToDisplay" 
     :key="stations?.[i - 1]?.station_id ?? `placeholder-${i}`" 
     :station="stations[i - 1]" 
   />
@@ -91,11 +128,11 @@ const handleSearch = async (payload: SearchParams) => {
 <style scoped>
 .app-layout {
   display: flex;
-  min-height: 100vh; 
-  min-height: 100dvh;  
+  height: 100vh; 
+  height: 100dvh;  
   width: 100%;     
   max-width: 100%;
-  overflow-x: hidden;
+  overflow: hidden;
   background-color: #0b1120; 
   color: white;
   font-family: sans-serif;
@@ -105,35 +142,67 @@ const handleSearch = async (payload: SearchParams) => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .map-wrapper {
   flex: 1;
-  min-height: 300px;
+  min-height: 0;
   border-radius: 12px;
   margin: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: #1e293b;
+  overflow: hidden;
+}
+
+.nearby-area {
+  margin: 0 15px 10px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 14px 20px 16px;
+  min-height: 130px;
+  flex-shrink: 0;
 }
 
 .nearby-wrapper {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: clamp(20px, 5vw, 100px); 
-  padding: 15px;
+  display: flex;
+  justify-content: flex-start;
+  gap: 24px;
+  flex-wrap: nowrap;
 }
 
 .nearby-header{
-  margin-left: 15px;
+  margin-bottom: 10px;
+}
+
+.nearby-header h2 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.no-results {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 0 20px;
 }
 
 html, body, #app {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 
