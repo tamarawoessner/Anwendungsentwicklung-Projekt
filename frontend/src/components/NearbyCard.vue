@@ -26,15 +26,18 @@ defineProps<{
 
 <style scoped>
 .nearby-card {
-    height: 120px;
+    width: 300px;
+    height: 100px;
     background-color: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: 15px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
     transition: all 0.2s ease-in-out;
     cursor: pointer;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .card-header {
@@ -43,7 +46,7 @@ defineProps<{
     align-items: center;
     width: 100%;
     color: #cbd5e1;
-    font-size: 1.15rem;
+    font-size: 0.85rem;
     font-weight: 500;
 }
 
@@ -61,22 +64,21 @@ defineProps<{
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
-
-
 .station-title {
     margin: 0;
     color: white;
-    font-size: 1.4rem;
+    font-size: 1.15rem;
+    font-weight: 600;
 }
 
 .top-right {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
 }
 
 .small-icon {
-    width: 20px;
+    width: 16px;
     height: auto;
 }
 

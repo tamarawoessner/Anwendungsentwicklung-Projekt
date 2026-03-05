@@ -72,7 +72,6 @@ watch(() => props, () => {
 .leaflet-wrapper {
   width: 100%;
   height: 100%;
-  min-height: 500px;
   border-radius: 12px;
   z-index: 1;
 }
