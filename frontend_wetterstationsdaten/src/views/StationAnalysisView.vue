@@ -12,7 +12,6 @@ const activeSelections = ref<string[]>(['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax'])
 const fetchedStationData = ref<any>(null);
 const isLoading = ref(false);
 
-// --- 1. NEUE VARIABLEN FÜR DIE JAHRE ---
 const startYearInput = ref<number>(1950);
 const endYearInput = ref<number>(2025);
 
@@ -20,7 +19,6 @@ onMounted(() => {
   if (history.state && history.state.stationData) {
     currentStation.value = history.state.stationData;
     
-    // Initialisierung der Jahre aus dem übergebenen Zeitraum (z.B. "1970-2025")
     const parts = currentStation.value.period.split('-');
     if (parts.length === 2) {
       startYearInput.value = parseInt(parts[0]);
@@ -28,7 +26,6 @@ onMounted(() => {
     }
     fetchStationData(); 
   } else {
-    // Test-Modus für dich zum Weiterarbeiten
     currentStation.value = {
       id: 'GME00122842',
       name: 'Villingen-Schwenningen (Test)',
@@ -90,12 +87,10 @@ const buildRequestPayload = () => {
 };
 
 const dateError = computed(() => {
-  // 1. Logik-Check: Start < Ende
   if (Number(startYearInput.value) >= Number(endYearInput.value)) {
     return "Das Startjahr muss vor dem Endjahr liegen.";
   }
 
-  // 2. Verfügbarkeits-Check (Daten aus dem Backend-Objekt 'availability')
   if (currentStation.value?.period) {
     const [dbStart, dbEnd] = currentStation.value.period.split('-').map(Number);
     
@@ -107,10 +102,9 @@ const dateError = computed(() => {
     }
   }
 
-  return null; // Kein Fehler
+  return null;
 });
 
-// --- 2. FETCH NUTZT JETZT DIE INPUT-FELDER ---
 const fetchStationData = async () => {
   if (startYearInput.value >= endYearInput.value) {
     fetchedStationData.value = null;
@@ -121,7 +115,6 @@ const fetchStationData = async () => {
   const payload = buildRequestPayload();
 
   try {
-    // Hier werden jetzt die Werte aus den Input-Feldern in die URL eingebaut:
     const url = `http://localhost:8000/stations/${currentStation.value.id}/data?start_year=${startYearInput.value}&end_year=${endYearInput.value}`;
     
     const res = await fetch(url, {
@@ -144,7 +137,6 @@ const fetchStationData = async () => {
   }
 };
 
-// --- 3. WATCHER BEOBACHTET AUCH DIE JAHRE ---
 watch([activeSelections, startYearInput, endYearInput], () => {
   fetchStationData();
 }, { deep: true });
@@ -228,7 +220,6 @@ const goBackToSearch = () => router.push({ name: 'home' });
 </template>
 
 <style scoped>
-/* --- Dein bestehendes CSS ergänzt um die neuen Elemente --- */
 .analysis-view-container {
   padding: 1rem 2rem;
   max-width: 1600px;
@@ -255,7 +246,6 @@ const goBackToSearch = () => router.push({ name: 'home' });
   overflow: hidden;
 }
 
-/* --- Der neue Auswahl-Bereich --- */
 .selection-container {
   background-color: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -312,7 +302,6 @@ const goBackToSearch = () => router.push({ name: 'home' });
   box-shadow: 0 0 5px rgba(251, 191, 36, 0.2);
 }
 
-/* --- Dark Inputs von der ersten Seite --- */
 .dark-input {
   background-color: transparent; 
   color: white;
@@ -330,7 +319,6 @@ const goBackToSearch = () => router.push({ name: 'home' });
   border-color: #a855f7; 
 }
 
-/* --- Restliches Design --- */
 .table-section {
   flex: 1;
   min-height: 0;

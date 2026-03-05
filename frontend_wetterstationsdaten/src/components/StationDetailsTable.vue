@@ -11,7 +11,6 @@ const formatTemp = (val: number | null | undefined) => {
   return Number(val).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 };
 
-// In StationDetailsTable.vue (computed property)
 const tableData = computed(() => {
   if (!props.data) return [];
   const rowsByYear: Record<number, any> = {};
@@ -21,14 +20,12 @@ const tableData = computed(() => {
     return rowsByYear[year];
   };
 
-  // 1. Jahr
   props.data.year?.data.forEach((p: any) => {
     const row = getRow(p.year);
     row.values['Ganzes Jahr Tmin'] = formatTemp(p.tmin_mean_c);
     row.values['Ganzes Jahr Tmax'] = formatTemp(p.tmax_mean_c);
   });
 
-  // 2. Jahreszeiten
   const seasonMap: Record<string, any> = {
     WINTER: { min: 'Winter Tmin', max: 'Winter Tmax' },
     SPRING: { min: 'Frühling Tmin', max: 'Frühling Tmax' },

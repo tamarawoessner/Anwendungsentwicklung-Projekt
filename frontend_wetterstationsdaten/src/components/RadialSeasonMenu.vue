@@ -123,19 +123,16 @@ const isActive = (bereich: string) => {
   overflow: visible;
 }
 
-/* HIER IST DIE MAGIE FÜR DIE OPACITY */
 .wheel-slice {
   cursor: pointer;
-  opacity: 0.3; /* Standardmäßig sind alle leicht durchsichtig (inaktiv) */
-  transition: opacity 0.3s ease; /* Weicher Übergang beim Klicken */
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
 }
 
-/* Wenn das Segment aktiv ist, kriegt es volle Deckkraft */
 .wheel-slice.active {
   opacity: 1; 
 }
 
-/* Der Hover-Effekt: Macht inaktive etwas heller und aktive ganz leicht dunkler */
 .wheel-slice:hover {
   opacity: 0.8; 
 }
