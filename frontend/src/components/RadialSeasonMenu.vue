@@ -6,7 +6,6 @@ const props = defineProps<{
 const emit = defineEmits(['selection-changed']);
 
 const select = (bereich: string) => {
-  console.log(`Menü sendet: ${bereich}`);
   emit('selection-changed', bereich);
 }
 
