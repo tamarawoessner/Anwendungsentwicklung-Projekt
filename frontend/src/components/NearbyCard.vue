@@ -1,13 +1,23 @@
 <script setup lang="ts">
-import type { Station } from '../App.vue';
+import type { Station } from '../types';
 
-defineProps<{
+const props = defineProps<{
     station?: Station
 }>();
+
+const emit = defineEmits<{
+    (e: 'select', station: Station): void
+}>();
+
+const handleClick = () => {
+    if (props.station) {
+        emit('select', props.station);
+    }
+};
 </script>
 
 <template>
-    <div class="nearby-card" :class="{ 'is-skeleton': !station }">
+    <div class="nearby-card" :class="{ 'is-skeleton': !station }" @click="handleClick">
         <div class="card-header">
             <span class="stationid" v-if="station">#{{ station.station_id }}</span>
             <span class="stationid" v-else>#---</span>

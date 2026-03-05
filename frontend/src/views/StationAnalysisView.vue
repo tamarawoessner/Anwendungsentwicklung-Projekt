@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import TemperatureChart from '../components/TemperatureChart.vue'; 
 import RadialSeasonMenu from '../components/RadialSeasonMenu.vue';
 import StationDetailsTable from '../components/StationDetailsTable.vue';
 
+const route = useRoute();
 const router = useRouter();
+
+const props = defineProps<{
+  stationId: string;
+}>();
 
 const currentStation = ref<any>(null);
 const activeSelections = ref<string[]>(['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax']);
@@ -16,24 +21,22 @@ const startYearInput = ref<number>(1950);
 const endYearInput = ref<number>(2025);
 
 onMounted(() => {
-  if (history.state && history.state.stationData) {
-    currentStation.value = history.state.stationData;
-    
-    const parts = currentStation.value.period.split('-');
-    if (parts.length === 2) {
-      startYearInput.value = parseInt(parts[0]);
-      endYearInput.value = parseInt(parts[1]);
-    }
-    fetchStationData(); 
-  } else {
-    currentStation.value = {
-      id: 'GME00122842',
-      name: 'Villingen-Schwenningen (Test)',
-      distanceKm: 6,
-      period: '1970-2025'
-    };
-    fetchStationData();
-  }
+  const name = (route.query.name as string) || props.stationId;
+  const distanceKm = Number(route.query.distance_km) || 0;
+  const startYear = Number(route.query.start_year) || 1950;
+  const endYear = Number(route.query.end_year) || 2025;
+
+  currentStation.value = {
+    id: props.stationId,
+    name: name,
+    distanceKm: distanceKm,
+    period: `${startYear}-${endYear}`
+  };
+
+  startYearInput.value = startYear;
+  endYearInput.value = endYear;
+
+  fetchStationData();
 });
 
 const toggleSelection = (bereich: string) => {
@@ -141,7 +144,7 @@ watch([activeSelections, startYearInput, endYearInput], () => {
   fetchStationData();
 }, { deep: true });
 
-const goBackToSearch = () => router.push({ name: 'home' });
+const goBackToSearch = () => router.push({ name: 'search' });
 </script>
 
 <template>
@@ -180,7 +183,7 @@ const goBackToSearch = () => router.push({ name: 'home' });
                   v-model="startYearInput" 
                   class="dark-input compact-year-field"
                   :class="{ 'input-error': dateError }"
-                  >
+                >
               </div>
               <div class="compact-input-group">
                 <label>Endjahr</label>
@@ -189,7 +192,7 @@ const goBackToSearch = () => router.push({ name: 'home' });
                   v-model="endYearInput" 
                   class="dark-input compact-year-field"
                   :class="{ 'input-error': dateError }"
-                  >
+                >
               </div>
 
               <p v-if="dateError" class="error-box">
@@ -383,6 +386,7 @@ const goBackToSearch = () => router.push({ name: 'home' });
   color: #ffffff;
   font-weight: bold;
 }
+
 @media screen and (min-width: 601px) and (max-width: 1024px) {
   .analysis-view-container {
     height: auto !important;
@@ -451,6 +455,7 @@ const goBackToSearch = () => router.push({ name: 'home' });
     flex-direction: column;
     margin-top: 1rem;
   }
+
   .table-container {
     max-height: 320px; 
     overflow-y: auto;
