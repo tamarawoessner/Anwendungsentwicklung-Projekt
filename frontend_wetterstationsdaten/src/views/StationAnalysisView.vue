@@ -121,6 +121,11 @@ const fetchStationData = async () => {
     
     const data = await res.json();
     fetchedStationData.value = data;
+
+    if (data.availability) {
+      currentStation.value.period = `${data.availability.start_year}-${data.availability.end_year}`;
+    }
+    
   } catch (err) {
     console.error("Fehler beim Laden der API:", err);
   } finally {
