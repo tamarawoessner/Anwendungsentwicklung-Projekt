@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import type { Station } from '../App.vue';
-
-export interface SearchParams {
-  lat: number | null;
-  lng: number | null;
-  radius: number;
-  startYear: number | null;
-  endYear: number | null;
-  limit: number;
-}
+import type { Station, SearchParams } from '../types';
 
 const lat = ref<number | null>(null);
 const lng = ref<number | null>(null);
@@ -68,6 +59,7 @@ const blockInvalidRadiusPaste = (event: ClipboardEvent) => {
 
 const emit = defineEmits<{
   (e: 'search', payload: SearchParams): void
+  (e: 'station-select', station: Station): void
 }>();
 defineProps<{
   stations: Station[];
@@ -280,6 +272,7 @@ const triggerSearch = () => {
             class="stationcard-wrapper" 
             v-for="station in stations" 
             :key="station.station_id"
+            @click="emit('station-select', station)"
         >
             <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
             <span class="station-name">{{ station.name || station.station_id }}</span>

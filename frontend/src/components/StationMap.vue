@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
-import type { Station } from '../App.vue';
+import type { Station } from '../types';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css'; 
 
