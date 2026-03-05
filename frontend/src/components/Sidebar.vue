@@ -115,6 +115,26 @@ const triggerSearch = () => {
     return;
   }
 
+  if (startYear.value !== null || endYear.value !== null) {
+    const sYear = Number(startYear.value);
+    const eYear = Number(endYear.value);
+
+    if (startYear.value !== null && (sYear < 1000 || sYear > 9999)) {
+      formError.value = 'Das Startjahr muss vierstellig sein (z. B. 2002).';
+      return;
+    }
+
+    if (endYear.value !== null && (eYear < 1000 || eYear > 9999)) {
+      formError.value = 'Das Endjahr muss vierstellig sein (z. B. 2024).';
+      return;
+    }
+
+    if (startYear.value !== null && endYear.value !== null && sYear > eYear) {
+      formError.value = 'Das Startjahr darf nicht nach dem Endjahr liegen.';
+      return;
+    }
+  }
+
   formError.value = null;
   const paket = {
     lat: latValue,
