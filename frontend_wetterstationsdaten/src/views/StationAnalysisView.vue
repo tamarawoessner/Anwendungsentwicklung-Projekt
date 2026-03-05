@@ -216,7 +216,11 @@ const goBackToSearch = () => router.push({ name: 'home' });
       <section class="right-column">
         <div class="chart-container">
           <div v-if="isLoading" class="loader-hint">Lade Daten...</div>
-          <TemperatureChart :selections="activeSelections" :data="fetchedStationData" />
+          <TemperatureChart
+            :selections="activeSelections"
+            :data="fetchedStationData"
+            @toggle-selection="toggleSelection"
+          />
         </div>
       </section>
     </main>
