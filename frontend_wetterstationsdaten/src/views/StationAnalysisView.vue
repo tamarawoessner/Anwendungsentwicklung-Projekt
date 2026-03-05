@@ -9,7 +9,7 @@ const router = useRouter();
 
 const currentStation = ref<any>(null);
 
-/*onMounted(() => {
+onMounted(() => {
   if (history.state && history.state.stationData) {
     currentStation.value = history.state.stationData;
 
@@ -18,7 +18,7 @@ const currentStation = ref<any>(null);
     console.warn("Keine Stationsdaten gefunden. Gehe zurück zur Suche.");
     router.push({ name: 'home' });
   }
-})*/
+})/*
 
 onMounted(() => {
   if (history.state && history.state.stationData) {
@@ -39,7 +39,7 @@ onMounted(() => {
     
     fetchStationData(); // Und laden die API trotzdem!
   }
-});
+});*/
 
 const activeSelections = ref<string[]>(['Ganzes Jahr']);
 const fetchedStationData = ref<any>(null);
