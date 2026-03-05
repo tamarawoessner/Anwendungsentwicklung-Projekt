@@ -504,7 +504,7 @@ h2{
 }
 
 .station-name {
-  font-size: 1.3rem;
+  font-size: 0.95rem;
   color: #f8fafc;
   font-weight: 500;
 }
