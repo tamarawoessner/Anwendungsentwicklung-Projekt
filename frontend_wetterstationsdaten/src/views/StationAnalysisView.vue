@@ -22,14 +22,11 @@ const currentStation = ref<any>(null);
 
 onMounted(() => {
   if (history.state && history.state.stationData) {
-    // Der echte Weg: Wenn die Suche später fertig ist, nehmen wir die echten Daten
     currentStation.value = history.state.stationData;
     fetchStationData(); 
   } else {
-    // TEMPORÄRER WORKAROUND FÜR DICH ZUM TESTEN:
     console.warn("Keine echten Router-Daten gefunden! Lade Dummy-Station zum Testen.");
     
-    // Wir setzen hier einfach eine Station hart rein, die es im Backend gibt
     currentStation.value = {
       id: 'GME00122842', // Achte darauf, dass diese ID in eurer Datenbank existiert!
       name: 'Villingen-Schwenningen (Test-Modus)',
@@ -37,20 +34,41 @@ onMounted(() => {
       period: '1970-2025'
     };
     
-    fetchStationData(); // Und laden die API trotzdem!
+    fetchStationData();
   }
 });
 
-const activeSelections = ref<string[]>(['Ganzes Jahr']);
+const activeSelections = ref<string[]>(['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax']);
 const fetchedStationData = ref<any>(null);
 const isLoading = ref(false);
 
 const toggleSelection = (bereich: string) => {
-  const index = activeSelections.value.indexOf(bereich);
-  if (index > -1) {
-    activeSelections.value.splice(index, 1);
+  const relations: Record<string, string[]> = {
+    'Ganzes Jahr': ['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax'],
+    'Winter': ['Winter Tmin', 'Winter Tmax'],
+    'Frühling': ['Frühling Tmin', 'Frühling Tmax'],
+    'Sommer': ['Sommer Tmin', 'Sommer Tmax'],
+    'Herbst': ['Herbst Tmin', 'Herbst Tmax']
+  };
+
+  if (relations[bereich]) {
+    const subSelections = relations[bereich];
+    const allPresent = subSelections.every(s => activeSelections.value.includes(s));
+
+    if (allPresent) {
+      activeSelections.value = activeSelections.value.filter(s => !subSelections.includes(s));
+    } else {
+      subSelections.forEach(s => {
+        if (!activeSelections.value.includes(s)) activeSelections.value.push(s);
+      });
+    }
   } else {
-    activeSelections.value.push(bereich);
+    const index = activeSelections.value.indexOf(bereich);
+    if (index > -1) {
+      activeSelections.value.splice(index, 1);
+    } else {
+      activeSelections.value.push(bereich);
+    }
   }
 };
 
@@ -63,23 +81,21 @@ const buildRequestPayload = () => {
     year: null, winter: null, spring: null, summer: null, autumn: null
   };
 
-  const map: Record<string, any> = {
-    'year': {both: 'Ganzes Jahr', min: 'Ganzes Jahr - min', max: 'Ganzes Jahr - max'},
-    'winter': {both: 'Winter', min: 'Winter - min', max: 'Winter - max'},
-    'spring': {both: 'Frühling', min: 'Frühling - min', max: 'Frühling - max'},
-    'summer': {both: 'Sommer', min: 'Sommer - min', max: 'Sommer - max'},
-    'autumn': {both: 'Herbst', min: 'Herbst - min', max: 'Herbst - max'}
-  }
+  const map = {
+    year: { min: 'Ganzes Jahr Tmin', max: 'Ganzes Jahr Tmax' },
+    winter: { min: 'Winter Tmin', max: 'Winter Tmax' },
+    spring: { min: 'Frühling Tmin', max: 'Frühling Tmax' },
+    summer: { min: 'Sommer Tmin', max: 'Sommer Tmax' },
+    autumn: { min: 'Herbst Tmin', max: 'Herbst Tmax' }
+  };
 
-  for (const [key, mapping] of Object.entries(map)) {
-    const tmin = activeSelections.value.includes(mapping.both) || activeSelections.value.includes(mapping.min);
-    const tmax = activeSelections.value.includes(mapping.both) || activeSelections.value.includes(mapping.max);
-    
+  for (const [key, sub] of Object.entries(map)) {
+    const tmin = activeSelections.value.includes(sub.min);
+    const tmax = activeSelections.value.includes(sub.max);
     if (tmin || tmax) {
       selectionObj[key] = { tmin, tmax };
     }
   }
-
   return { selection: selectionObj };
 };
 
@@ -118,11 +134,8 @@ watch(activeSelections, fetchStationData, { deep: true });
 
 <template>
   <div class="analysis-view-container">
-    
     <main class="content-grid">
-      
       <aside class="left-column">
-        
         <h2 class="section-title">
           Ausgewählte Station
           <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
@@ -147,7 +160,7 @@ watch(activeSelections, fetchStationData, { deep: true });
 
         <div class="selection-container">
           <h4>Auswahl</h4>
-          <RadialSeasonMenu @selection-changed="toggleSelection" />
+          <RadialSeasonMenu :activeSelections="activeSelections" @selection-changed="toggleSelection" />
         </div>
 
         <div class="table-section">
