@@ -332,6 +332,8 @@ const goBackToSearch = () => router.push({ name: 'home' });
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .chart-container {
