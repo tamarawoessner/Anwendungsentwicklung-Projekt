@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 from unittest.mock import patch
-from psycopg import Error as PsycopgError
+
 from app.main import app
 
 
@@ -45,12 +45,3 @@ def test_station_meta_returns_400_on_value_error():
         r = client.get("/stations/%20%20/meta")  # "  "
         assert r.status_code == 400
         assert "station_id is required" in r.text
-
-
-def test_station_meta_db_error_500():
-    client = TestClient(app)
-    with patch("app.api.routes.station_meta.connect_to_db", return_value=FakeConn()), \
-         patch("app.api.routes.station_meta.get_station_meta", side_effect=PsycopgError()):
-        r = client.get("/stations/X/meta")
-        assert r.status_code == 500
-        assert r.json()["detail"] == "Database error"

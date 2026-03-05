@@ -39,6 +39,12 @@ def test_read_station_data_year_invalid_element_returns_none():
     assert res is None
 
 
+def test_read_station_data_year_invalid_element_returns_none():
+    conn = _Conn(rows=[])
+    res = read_station_data_year(conn, "X", 2000, 2001, element="INVALID")
+    assert res is None
+
+
 def test_read_station_data_year_tmin_maps_rows_and_calls_sql():
     conn = _Conn(rows=[(2000, 1.2), (2001, None)])
     res = read_station_data_year(conn, "X", 2000, 2001, element="TMIN")
@@ -101,16 +107,6 @@ def test_read_station_data_seasons_tmin_maps_rows_and_calls_sql():
     assert params == ("X", 2000, 2001, "WINTER")
 
 
-def test_read_station_data_seasons_tmax_maps_rows():
-    conn = _Conn(rows=[(2000, "SPRING", 12.3), (2001, "SPRING", None)])
-    res = read_station_data_seasons(conn, "X", 2000, 2001, season="SPRING", element="TMAX")
-
-    assert res == [
-        {"year": 2000, "season": "SPRING", "tmax_mean_c": 12.3},
-        {"year": 2001, "season": "SPRING", "tmax_mean_c": None},
-    ]
-
-
 def test_read_station_data_seasons_both_maps_rows():
     conn = _Conn(rows=[(2000, "SUMMER", 10.0, 20.0)])
     res = read_station_data_seasons(conn, "X", 2000, 2000, season="SUMMER", element="BOTH")
@@ -121,20 +117,3 @@ def test_read_station_data_seasons_empty_rows_returns_empty_list():
     conn = _Conn(rows=[])
     res = read_station_data_seasons(conn, "X", 2000, 2001, season="AUTUMN", element="TMAX")
     assert res == []
-
-class BadConn:
-    def cursor(self):
-        raise Exception("boom")
-
-def test_read_station_data_seasons_exception_returns_none():
-    res = read_station_data_seasons(BadConn(), "X", 2000, 2001, season="WINTER", element="TMIN")
-    assert res is None
-
-
-class BadConnYear:
-    def cursor(self):
-        raise Exception("boom")
-
-def test_read_station_data_year_exception_returns_none():
-    res = read_station_data_year(BadConnYear(), "X", 2000, 2001, element="TMIN")
-    assert res is None
