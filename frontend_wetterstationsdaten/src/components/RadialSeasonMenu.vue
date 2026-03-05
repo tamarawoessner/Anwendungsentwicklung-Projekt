@@ -35,14 +35,14 @@ const select = (bereich: string) => {
           <path d="M 100 100 L 170.71 170.71 A 100 100 0 0 1 29.29 170.71 Z" fill="#fbbf24" class="wheel-slice" @click="select('Sommer')" />
           <path d="M 100 100 L 29.29 170.71 A 100 100 0 0 1 29.29 29.29 Z" fill="#fb923c" class="wheel-slice" @click="select('Herbst')" />
 
-          <path d="M 100 100 L 56.16 56.16 A 62 62 0 0 1 100 38 Z" fill="#38bdf8" class="wheel-slice" @click="select('Winter-Kalt')" />
-          <path d="M 100 100 L 100 38 A 62 62 0 0 1 143.84 56.16 Z" fill="#f87171" class="wheel-slice" @click="select('Winter-Warm')" />
-          <path d="M 100 100 L 143.84 56.16 A 62 62 0 0 1 162 100 Z" fill="#38bdf8" class="wheel-slice" @click="select('Frühling-Kalt')" />
-          <path d="M 100 100 L 162 100 A 62 62 0 0 1 143.84 143.84 Z" fill="#f87171" class="wheel-slice" @click="select('Frühling-Warm')" />
-          <path d="M 100 100 L 143.84 143.84 A 62 62 0 0 1 100 162 Z" fill="#38bdf8" class="wheel-slice" @click="select('Sommer-Kalt')" />
-          <path d="M 100 100 L 100 162 A 62 62 0 0 1 56.16 143.84 Z" fill="#f87171" class="wheel-slice" @click="select('Sommer-Warm')" />
-          <path d="M 100 100 L 56.16 143.84 A 62 62 0 0 1 38 100 Z" fill="#38bdf8" class="wheel-slice" @click="select('Herbst-Kalt')" />
-          <path d="M 100 100 L 38 100 A 62 62 0 0 1 56.16 56.16 Z" fill="#f87171" class="wheel-slice" @click="select('Herbst-Warm')" />
+          <path d="M 100 100 L 56.16 56.16 A 62 62 0 0 1 100 38 Z" fill="#38bdf8" class="wheel-slice" @click="select('Winter - min')" />
+          <path d="M 100 100 L 100 38 A 62 62 0 0 1 143.84 56.16 Z" fill="#f87171" class="wheel-slice" @click="select('Winter - max')" />
+          <path d="M 100 100 L 143.84 56.16 A 62 62 0 0 1 162 100 Z" fill="#38bdf8" class="wheel-slice" @click="select('Frühling - min')" />
+          <path d="M 100 100 L 162 100 A 62 62 0 0 1 143.84 143.84 Z" fill="#f87171" class="wheel-slice" @click="select('Frühling - max')" />
+          <path d="M 100 100 L 143.84 143.84 A 62 62 0 0 1 100 162 Z" fill="#38bdf8" class="wheel-slice" @click="select('Sommer - min')" />
+          <path d="M 100 100 L 100 162 A 62 62 0 0 1 56.16 143.84 Z" fill="#f87171" class="wheel-slice" @click="select('Sommer - max')" />
+          <path d="M 100 100 L 56.16 143.84 A 62 62 0 0 1 38 100 Z" fill="#38bdf8" class="wheel-slice" @click="select('Herbst - min')" />
+          <path d="M 100 100 L 38 100 A 62 62 0 0 1 56.16 56.16 Z" fill="#f87171" class="wheel-slice" @click="select('Herbst - max')" />
         </g>
 
         <g class="wheel-text-group" fill="#ffffff" font-size="16" font-weight="bold" text-anchor="middle">
@@ -67,8 +67,8 @@ const select = (bereich: string) => {
 
         <g mask="url(#cutout_gaps2)">
           <circle cx="100" cy="100" r="100" fill="#a78bfa" class="wheel-slice" @click="select('Ganzes Jahr')" />
-          <path d="M 38 100 A 62 62 0 0 1 162 100 Z" fill="#38bdf8" class="wheel-slice" @click="select('Ganzes Jahr-kalt')" />
-          <path d="M 162 100 A 62 62 0 0 1 38 100 Z" fill="#f87171" class="wheel-slice" @click="select('Ganzes Jahr-warm')" />
+          <path d="M 38 100 A 62 62 0 0 1 162 100 Z" fill="#38bdf8" class="wheel-slice" @click="select('Ganzes Jahr - min')" />
+          <path d="M 162 100 A 62 62 0 0 1 38 100 Z" fill="#f87171" class="wheel-slice" @click="select('Ganzes Jahr - max')" />
         </g>
 
         <g class="wheel-text-group" fill="#ffffff" font-size="20" font-weight="bold" text-anchor="middle">
