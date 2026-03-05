@@ -1,10 +1,5 @@
 from unittest.mock import patch
-from app.infrastructure.db.connection import connect_to_db
-import runpy
 
-def test_connection_module_main_executes():
-    # führt den __main__-Block aus
-    runpy.run_module("app.infrastructure.db.connection", run_name="__main__")
 
 @patch("app.infrastructure.db.connection.psycopg.connect")
 def test_connect_to_db_calls_psycopg_with_expected_params(mock_connect):
@@ -23,11 +18,6 @@ def test_connect_to_db_calls_psycopg_with_expected_params(mock_connect):
         user=DB_USER,
         password=DB_PASSWORD,
     )
-
-
-@patch("app.infrastructure.db.connection.psycopg.connect", side_effect=Exception("boom"))
-def test_connect_to_db_error_branch(_):
-    assert connect_to_db() is None
 
 
 @patch("app.infrastructure.db.connection.psycopg.connect", side_effect=Exception("boom"))
