@@ -7,6 +7,8 @@ const props = defineProps<{
   data?: any 
 }>();
 
+const emit = defineEmits(['toggle-selection']);
+
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
 let myChart: Chart | null = null;
 
@@ -86,7 +88,13 @@ const updateChart = () => {
         x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.1)' } }
       },
       plugins: {
-        legend: { labels: { color: '#ffffff' } }
+        legend: { 
+          labels: { color: '#ffffff' },
+          onClick: (e, legendItem) => {
+            const label = legendItem.text;
+            emit('toggle-selection', label);
+          }
+        }
       }
     }
   });
