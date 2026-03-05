@@ -9,7 +9,7 @@ const router = useRouter();
 
 const currentStation = ref<any>(null);
 
-onMounted(() => {
+/*onMounted(() => {
   if (history.state && history.state.stationData) {
     currentStation.value = history.state.stationData;
 
@@ -18,7 +18,7 @@ onMounted(() => {
     console.warn("Keine Stationsdaten gefunden. Gehe zurück zur Suche.");
     router.push({ name: 'home' });
   }
-})/*
+})*/
 
 onMounted(() => {
   if (history.state && history.state.stationData) {
@@ -39,7 +39,7 @@ onMounted(() => {
     
     fetchStationData(); // Und laden die API trotzdem!
   }
-});*/
+});
 
 const activeSelections = ref<string[]>(['Ganzes Jahr']);
 const fetchedStationData = ref<any>(null);
@@ -123,7 +123,10 @@ watch(activeSelections, fetchStationData, { deep: true });
       
       <aside class="left-column">
         
-        <h2 class="section-title">Ausgewählte Station 📍</h2>
+        <h2 class="section-title">
+          Ausgewählte Station
+          <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
+        </h2>
 
       <div class="station-info-box" v-if="currentStation">
         <h3>{{ currentStation.name }}</h3>
@@ -221,9 +224,18 @@ watch(activeSelections, fetchStationData, { deep: true });
 }
 
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.25rem;
   margin: 0;
   color: #ffffff;
+}
+
+.pin-icon {
+  width: 18px;
+  height: auto;
+  object-fit: contain;
 }
 
 .station-info-box {
