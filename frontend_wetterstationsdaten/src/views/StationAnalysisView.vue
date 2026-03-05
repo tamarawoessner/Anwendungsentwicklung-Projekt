@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import TemperatureChart from '../components/TemperatureChart.vue'; 
 import RadialSeasonMenu from '../components/RadialSeasonMenu.vue';
@@ -8,39 +8,36 @@ import StationDetailsTable from '../components/StationDetailsTable.vue';
 const router = useRouter();
 
 const currentStation = ref<any>(null);
+const activeSelections = ref<string[]>(['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax']);
+const fetchedStationData = ref<any>(null);
+const isLoading = ref(false);
 
-/*onMounted(() => {
-  if (history.state && history.state.stationData) {
-    currentStation.value = history.state.stationData;
-
-    fetchStationData();
-  } else {
-    console.warn("Keine Stationsdaten gefunden. Gehe zurück zur Suche.");
-    router.push({ name: 'home' });
-  }
-})*/
+// --- 1. NEUE VARIABLEN FÜR DIE JAHRE ---
+const startYearInput = ref<number>(1950);
+const endYearInput = ref<number>(2025);
 
 onMounted(() => {
   if (history.state && history.state.stationData) {
     currentStation.value = history.state.stationData;
+    
+    // Initialisierung der Jahre aus dem übergebenen Zeitraum (z.B. "1970-2025")
+    const parts = currentStation.value.period.split('-');
+    if (parts.length === 2) {
+      startYearInput.value = parseInt(parts[0]);
+      endYearInput.value = parseInt(parts[1]);
+    }
     fetchStationData(); 
   } else {
-    console.warn("Keine echten Router-Daten gefunden! Lade Dummy-Station zum Testen.");
-    
+    // Test-Modus für dich zum Weiterarbeiten
     currentStation.value = {
-      id: 'GME00122842', // Achte darauf, dass diese ID in eurer Datenbank existiert!
-      name: 'Villingen-Schwenningen (Test-Modus)',
+      id: 'GME00122842',
+      name: 'Villingen-Schwenningen (Test)',
       distanceKm: 6,
       period: '1970-2025'
     };
-    
     fetchStationData();
   }
 });
-
-const activeSelections = ref<string[]>(['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax']);
-const fetchedStationData = ref<any>(null);
-const isLoading = ref(false);
 
 const toggleSelection = (bereich: string) => {
   const relations: Record<string, string[]> = {
@@ -54,7 +51,6 @@ const toggleSelection = (bereich: string) => {
   if (relations[bereich]) {
     const subSelections = relations[bereich];
     const allPresent = subSelections.every(s => activeSelections.value.includes(s));
-
     if (allPresent) {
       activeSelections.value = activeSelections.value.filter(s => !subSelections.includes(s));
     } else {
@@ -72,15 +68,10 @@ const toggleSelection = (bereich: string) => {
   }
 };
 
-const goBackToSearch = () => {
-  router.push({ name: 'home' }); 
-};
-
 const buildRequestPayload = () => {
   const selectionObj: Record<string, any> = {
     year: null, winter: null, spring: null, summer: null, autumn: null
   };
-
   const map = {
     year: { min: 'Ganzes Jahr Tmin', max: 'Ganzes Jahr Tmax' },
     winter: { min: 'Winter Tmin', max: 'Winter Tmax' },
@@ -88,7 +79,6 @@ const buildRequestPayload = () => {
     summer: { min: 'Sommer Tmin', max: 'Sommer Tmax' },
     autumn: { min: 'Herbst Tmin', max: 'Herbst Tmax' }
   };
-
   for (const [key, sub] of Object.entries(map)) {
     const tmin = activeSelections.value.includes(sub.min);
     const tmax = activeSelections.value.includes(sub.max);
@@ -99,8 +89,30 @@ const buildRequestPayload = () => {
   return { selection: selectionObj };
 };
 
+const dateError = computed(() => {
+  // 1. Logik-Check: Start < Ende
+  if (Number(startYearInput.value) >= Number(endYearInput.value)) {
+    return "Das Startjahr muss vor dem Endjahr liegen.";
+  }
+
+  // 2. Verfügbarkeits-Check (Daten aus dem Backend-Objekt 'availability')
+  if (currentStation.value?.period) {
+    const [dbStart, dbEnd] = currentStation.value.period.split('-').map(Number);
+    
+    if (Number(startYearInput.value) < dbStart) {
+      return `Daten erst ab ${dbStart} verfügbar.`;
+    }
+    if (Number(endYearInput.value) > dbEnd) {
+      return `Daten nur bis ${dbEnd} verfügbar.`;
+    }
+  }
+
+  return null; // Kein Fehler
+});
+
+// --- 2. FETCH NUTZT JETZT DIE INPUT-FELDER ---
 const fetchStationData = async () => {
-  if (activeSelections.value.length === 0) {
+  if (startYearInput.value >= endYearInput.value) {
     fetchedStationData.value = null;
     return;
   }
@@ -109,32 +121,35 @@ const fetchStationData = async () => {
   const payload = buildRequestPayload();
 
   try {
-    const [startYear, endYear] = currentStation.value.period.split('-');
-    const url = `http://localhost:8000/stations/${currentStation.value.id}/data?start_year=${startYear}&end_year=${endYear}`;
+    // Hier werden jetzt die Werte aus den Input-Feldern in die URL eingebaut:
+    const url = `http://localhost:8000/stations/${currentStation.value.id}/data?start_year=${startYearInput.value}&end_year=${endYearInput.value}`;
+    
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) throw new Error(`Netzwerk-Antwort war nicht ok (Status: ${res.status})`);
-    
+    if (!res.ok) throw new Error(`Status: ${res.status}`);
     const data = await res.json();
     fetchedStationData.value = data;
 
     if (data.availability) {
       currentStation.value.period = `${data.availability.start_year}-${data.availability.end_year}`;
     }
-    
   } catch (err) {
-    console.error("Fehler beim Laden der API:", err);
+    console.error("Fehler beim Laden:", err);
   } finally {
     isLoading.value = false;
   }
 };
 
-watch(activeSelections, fetchStationData, { deep: true });
+// --- 3. WATCHER BEOBACHTET AUCH DIE JAHRE ---
+watch([activeSelections, startYearInput, endYearInput], () => {
+  fetchStationData();
+}, { deep: true });
 
+const goBackToSearch = () => router.push({ name: 'home' });
 </script>
 
 <template>
@@ -146,48 +161,70 @@ watch(activeSelections, fetchStationData, { deep: true });
           <img src="../assets/pin.png" alt="Pin-Icon" class="pin-icon">
         </h2>
 
-      <div class="station-info-box" v-if="currentStation">
-        <h3>{{ currentStation.name }}</h3>
-        <p class="station-id">#{{ currentStation.id }}</p>
-        <div class="station-details">
-          <p>Entfernung: {{ currentStation.distanceKm }}km</p>
-          <p>Zeitraum: {{ currentStation.period }}</p>
+        <div class="station-info-box" v-if="currentStation">
+          <h3>{{ currentStation.name }}</h3>
+          <p class="station-id">#{{ currentStation.id }}</p>
+          <div class="station-details">
+            <p>Entfernung: {{ currentStation.distanceKm }}km</p>
+            <p>Zeitraum: {{ currentStation.period }}</p>
+          </div>
         </div>
-      </div>
 
-        <button @click="goBackToSearch" class="btn-back">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          andere Station wählen
-        </button>
+        <button @click="goBackToSearch" class="btn-back">andere Station wählen</button>
 
         <div class="selection-container">
           <h4>Auswahl</h4>
-          <RadialSeasonMenu :activeSelections="activeSelections" @selection-changed="toggleSelection" />
+          
+          <div class="selection-controls-wrapper">
+            <div class="radial-menus-mini">
+              <RadialSeasonMenu :activeSelections="activeSelections" @selection-changed="toggleSelection" />
+            </div>
+
+            <div class="year-selector-compact">
+              <div class="compact-input-group">
+                <label>Startjahr</label>
+                <input 
+                  type="number" 
+                  v-model="startYearInput" 
+                  class="dark-input compact-year-field"
+                  :class="{ 'input-error': dateError }"
+                  >
+              </div>
+              <div class="compact-input-group">
+                <label>Endjahr</label>
+                <input 
+                  type="number" 
+                  v-model="endYearInput" 
+                  class="dark-input compact-year-field"
+                  :class="{ 'input-error': dateError }"
+                  >
+              </div>
+
+              <p v-if="dateError" class="error-box">
+                {{ dateError }}
+              </p>
+            </div>
+          </div>
         </div>
 
         <div class="table-section">
-          <div class="header-with-icon">
-            <h4>Details</h4>
-          </div>
+          <h4>Details</h4>
           <StationDetailsTable :selections="activeSelections" :data="fetchedStationData" />
         </div>
       </aside>
 
       <section class="right-column">
         <div class="chart-container">
+          <div v-if="isLoading" class="loader-hint">Lade Daten...</div>
           <TemperatureChart :selections="activeSelections" :data="fetchedStationData" />
         </div>
       </section>
-
     </main>
   </div>
 </template>
 
 <style scoped>
-
+/* --- Dein bestehendes CSS ergänzt um die neuen Elemente --- */
 .analysis-view-container {
   padding: 1rem 2rem;
   max-width: 1600px;
@@ -211,10 +248,85 @@ watch(activeSelections, fetchStationData, { deep: true });
   flex-direction: column;
   gap: 0.75rem;
   height: 100%; 
-  min-height: 0; 
   overflow: hidden;
 }
 
+/* --- Der neue Auswahl-Bereich --- */
+.selection-container {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.selection-controls-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.radial-menus-mini {
+  flex: 2.5;
+  transform: scale(0.95);
+  margin-left: -15px;
+}
+
+.year-selector-compact {
+  flex: 0.75;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-left: 1rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 150px;
+}
+
+.compact-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.compact-input-group label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.error-box {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-top: 5px;
+  line-height: 1.2;
+}
+
+.input-error {
+  border-color: #fbbf24;
+  box-shadow: 0 0 5px rgba(251, 191, 36, 0.2);
+}
+
+/* --- Dark Inputs von der ersten Seite --- */
+.dark-input {
+  background-color: transparent; 
+  color: white;
+  border: 1px solid #475569;
+  border-radius: 6px; 
+  padding: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+  width: 100%;
+  text-align: center;
+}
+
+.dark-input:focus {
+  border-color: #a855f7; 
+}
+
+/* --- Restliches Design --- */
 .table-section {
   flex: 1;
   min-height: 0;
@@ -227,18 +339,21 @@ watch(activeSelections, fetchStationData, { deep: true });
   border: 1px solid #545454;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
   display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
 }
 
 .chart-container {
   width: 100%;
   flex: 1;
   position: relative;
-  min-height: 0;
+}
+
+.loader-hint {
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: #a855f7;
+  font-size: 0.75rem;
 }
 
 .section-title {
@@ -246,91 +361,34 @@ watch(activeSelections, fetchStationData, { deep: true });
   align-items: center;
   gap: 0.5rem;
   font-size: 1.25rem;
-  margin: 0;
   color: #ffffff;
 }
 
-.pin-icon {
-  width: 18px;
-  height: auto;
-  object-fit: contain;
+.pin-icon { 
+  width: 18px; 
+  height: auto; 
 }
 
 .station-info-box {
   border: 1px solid #545454;
   padding: 0.5rem 1rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
-.station-info-box h3 {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.1rem;
-}
-
-.station-info-box p {
-  margin: 0.15rem 0;
-  font-size: 0.9rem;
+.station-id, .station-details p {
   color: #ffffff;
+  font-size: 0.9rem;
 }
 
 .btn-back {
   padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
   background: linear-gradient(90deg, #004aad, #cb6ce6);
   border-radius: 6px;
   border: none;
   cursor: pointer;
-  font-weight: bold;
   color: #ffffff;
-  transition: all 0.2s;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  font-weight: bold;
 }
-
-.btn-back:hover {
-  opacity: 0.8;
-}
-
-.radial-menus-container {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 0.5rem;
-}
-
-.menu-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  width: 50%;
-}
-
-.menu-wrapper h4 {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #64748b;
-}
-
-.table-container::-webkit-scrollbar {
-  width: 6px;
-}
-.table-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-.table-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  transition: background 0.3s;
-}
-.table-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
 @media screen and (min-width: 601px) and (max-width: 1024px) {
   .analysis-view-container {
     height: auto !important;

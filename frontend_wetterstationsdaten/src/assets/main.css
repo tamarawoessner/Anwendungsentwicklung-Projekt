@@ -33,7 +33,7 @@ body {
 h1, h2, h3, h4 {
   color: #ffffff;
   line-height: 1.2;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 @media (max-width: 1024px) {
