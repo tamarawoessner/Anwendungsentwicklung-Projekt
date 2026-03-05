@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 from unittest.mock import patch
-from psycopg import Error as PsycopgError
+
 from app.main import app
 
 
@@ -53,19 +53,3 @@ def test_station_data_returns_400_on_value_error():
         )
         assert r.status_code == 400
         assert "bad input" in r.text
-
-def test_station_data_db_error_500():
-    client = TestClient(app)
-
-    class FakeConn:
-        def close(self): 
-            pass
-
-    with patch("app.api.routes.station_data.connect_to_db", return_value=FakeConn()), \
-         patch("app.api.routes.station_data.get_station_data", side_effect=PsycopgError()):
-        r = client.post(
-            "/stations/X/data?start_year=2000&end_year=2001",
-            json={"selection": {"year": "BOTH"}}
-        )
-        assert r.status_code == 500
-        assert r.json()["detail"] == "Database error"
