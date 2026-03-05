@@ -88,3 +88,54 @@ def test_read_location_for_all_stations_ok():
 def test_read_location_for_station_exception_returns_none():
     conn = _Conn(_Cursor(raise_on_execute=True))
     assert read_location_for_station(conn, "X") is None
+
+
+def test_read_years_for_all_stations_only_start_year_adds_having():
+    conn = _Conn(_Cursor(fetchall=[]))
+    res = read_years_for_all_stations(conn, required_start_year=1980)
+    assert res == []
+    q, params = conn._cursor.executed[0]
+    assert "HAVING" in q
+    assert params == (1980,)
+
+
+def test_read_years_for_all_stations_only_end_year_adds_having():
+    conn = _Conn(_Cursor(fetchall=[]))
+    res = read_years_for_all_stations(conn, required_end_year=1980)
+    assert res == []
+    q, params = conn._cursor.executed[0]
+    assert "HAVING" in q
+    assert params == (1980,)
+
+
+def test_read_years_for_all_stations_empty_rows_returns_empty_list():
+    conn = _Conn(_Cursor(fetchall=[]))
+    assert read_years_for_all_stations(conn) == []
+
+
+def test_read_location_for_station_returns_none_when_no_row():
+    conn = _Conn(_Cursor(fetchone=None))
+    assert read_location_for_station(conn, "X") is None
+
+
+def test_read_location_for_all_stations_exception_returns_none():
+    conn = _Conn(_Cursor(raise_on_execute=True))
+    assert read_location_for_all_stations(conn) is None
+
+
+def test_read_years_for_station_empty_tuple_returns_none():
+    # covers the "if result:" false branch when fetchone returns an empty tuple
+    conn = _Conn(_Cursor(fetchone=()))
+    assert read_years_for_station(conn, "X") is None
+
+
+def test_read_location_for_all_stations_rows_none_returns_empty_list():
+    # covers the branch when fetchall() returns None (treated as no rows)
+    conn = _Conn(_Cursor(fetchall=None))
+    res = read_location_for_all_stations(conn)
+    assert res == []
+
+
+def test_read_years_for_station_exception_returns_none():
+    conn = _Conn(_Cursor(raise_on_execute=True))
+    assert read_years_for_station(conn, "X") is None
