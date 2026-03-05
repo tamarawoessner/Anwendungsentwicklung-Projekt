@@ -72,6 +72,7 @@ const emit = defineEmits<{
 defineProps<{
   stations: Station[];
   resultsCount: number | null;
+  hasSearched: boolean;
 }>();
 
 const setLimit = (newLimit: number) => {
@@ -266,8 +267,12 @@ const triggerSearch = () => {
 
 <div class="stations-list-container">
     
-    <div v-if="stations.length === 0" class="empty-state">
+    <div v-if="stations.length === 0 && !hasSearched" class="empty-state">
         <span class="skeleton-text">Warten auf Suche...</span>
+    </div>
+
+    <div v-else-if="stations.length === 0 && hasSearched" class="empty-state">
+        <span class="skeleton-text">Keine Treffer</span>
     </div>
 
     <template v-else>
@@ -288,12 +293,14 @@ const triggerSearch = () => {
 <style scoped>
 .sidebar {
   width: 350px;
+  flex-shrink: 0;
   background-color: #0f172a;
   border-right: 1px solid #1e293b;
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 15px; 
+  gap: 15px;
+  overflow-y: auto;
 }
 
 .input-group {
