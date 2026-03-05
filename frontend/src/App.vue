@@ -16,6 +16,7 @@ export interface Station {
 }
 
 const stations = ref<Station[]>([]);
+const resultsCount = ref<number | null>(null);
 const searchLat = ref<number | null>(null);
 const searchLng = ref<number | null>(null);
 const searchRadius = ref<number | null>(null);
@@ -45,10 +46,12 @@ const handleSearch = async (payload: SearchParams) => {
     const data = await response.json();
     
     stations.value = data.stations; 
+    resultsCount.value = Number.isFinite(data.count) ? data.count : data.stations.length;
 
     console.log(`BÄM! ${data.count} Stationen gefunden:`, stations.value);
 
   } catch (error) {
+    resultsCount.value = null;
     console.error("Ohje, da ging was schief beim Abrufen:", error);
   }
 };
@@ -57,7 +60,7 @@ const handleSearch = async (payload: SearchParams) => {
 <template>
   <div class="app-layout">
 
-    <Sidebar :stations="stations" @search="handleSearch" />
+    <Sidebar :stations="stations" :results-count="resultsCount" @search="handleSearch" />
 
     <main class="map-area">
       <div class="map-wrapper">
