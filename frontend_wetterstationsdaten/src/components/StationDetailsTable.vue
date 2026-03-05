@@ -13,60 +13,38 @@ const formatTemp = (val: number | null | undefined) => {
 
 const tableData = computed(() => {
   if (!props.data) return [];
-
-  const rowsByYear: Record<number, { year: number, values: Record<string, string> }> = {};
+  const rowsByYear: Record<number, any> = {};
 
   const getRow = (year: number) => {
-    if (!rowsByYear[year]) {
-      rowsByYear[year] = { year, values: {} };
-    }
+    if (!rowsByYear[year]) rowsByYear[year] = { year, values: {} };
     return rowsByYear[year];
   };
 
-  if (props.data.year?.data) {
-    props.data.year.data.forEach((p: any) => {
-      const row = getRow(p.year);
-      row.values['Ganzes Jahr - min'] = formatTemp(p.tmin_mean_c);
-      row.values['Ganzes Jahr - max'] = formatTemp(p.tmax_mean_c);
-      
-      if (p.tmin_mean_c !== null || p.tmax_mean_c !== null) {
-        row.values['Ganzes Jahr'] = `Min: ${formatTemp(p.tmin_mean_c)} / Max: ${formatTemp(p.tmax_mean_c)}`;
-      }
-    });
-  }
+  props.data.year?.data.forEach((p: any) => {
+    const row = getRow(p.year);
+    row.values['Ganzes Jahr Tmin'] = formatTemp(p.tmin_mean_c);
+    row.values['Ganzes Jahr Tmax'] = formatTemp(p.tmax_mean_c);
+  });
 
-  const seasonMap: Record<string, { min: string, max: string, both: string }> = {
-    'WINTER': { min: 'Winter - min', max: 'Winter - max', both: 'Winter' },
-    'SPRING': { min: 'Frühling - min', max: 'Frühling - max', both: 'Frühling' },
-    'SUMMER': { min: 'Sommer - min', max: 'Sommer - max', both: 'Sommer' },
-    'AUTUMN': { min: 'Herbst - min', max: 'Herbst - max', both: 'Herbst' }
+  const seasonMap: Record<string, any> = {
+    WINTER: { min: 'Winter Tmin', max: 'Winter Tmax' },
+    SPRING: { min: 'Frühling Tmin', max: 'Frühling Tmax' },
+    SUMMER: { min: 'Sommer Tmin', max: 'Sommer Tmax' },
+    AUTUMN: { min: 'Herbst Tmin', max: 'Herbst Tmax' }
   };
 
   if (props.data.seasons) {
-    for (const [seasonKey, mapping] of Object.entries(seasonMap)) {
-      const seasonData = props.data.seasons[seasonKey]?.data;
-      if (seasonData) {
-        seasonData.forEach((p: any) => {
-          const row = getRow(p.year);
-          row.values[mapping.min] = formatTemp(p.tmin_mean_c);
-          row.values[mapping.max] = formatTemp(p.tmax_mean_c);
-          
-          if (p.tmin_mean_c !== null || p.tmax_mean_c !== null) {
-            row.values[mapping.both] = `${formatTemp(p.tmin_mean_c)} / ${formatTemp(p.tmax_mean_c)}`;
-          }
-        });
-      }
-    }
+    Object.entries(seasonMap).forEach(([key, mapping]) => {
+      props.data.seasons[key]?.data.forEach((p: any) => {
+        const row = getRow(p.year);
+        row.values[mapping.min] = formatTemp(p.tmin_mean_c);
+        row.values[mapping.max] = formatTemp(p.tmax_mean_c);
+      });
+    });
   }
 
-  return Object.values(rowsByYear).sort((a, b) => b.year - a.year);
+  return Object.values(rowsByYear).sort((a: any, b: any) => b.year - a.year);
 });
-
-const getColorClass = (selection: string) => {
-  if (selection.includes('Kalt') || selection.includes('Winter')) return 'val-cold';
-  if (selection.includes('Warm') || selection.includes('Sommer')) return 'val-warm';
-  return 'val-neutral';
-};
 
 const getValue = (row: any, sel: string) => {
   return row.values[sel] || '-';
@@ -94,7 +72,7 @@ const getValue = (row: any, sel: string) => {
         <tr v-else v-for="row in tableData" :key="row.year">
           <td>{{ row.year }}</td>
           
-          <td v-for="sel in selections" :key="sel" :class="getColorClass(sel)">
+          <td v-for="sel in selections" :key="sel">
             {{ getValue(row, sel) }}
           </td>
         </tr>

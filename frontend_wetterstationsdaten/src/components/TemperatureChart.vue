@@ -7,12 +7,14 @@ const props = defineProps<{
   data?: any 
 }>();
 
+const emit = defineEmits(['toggle-selection']);
+
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
 let myChart: Chart | null = null;
 
 const getColor = (selection: string) => {
-  if (selection.includes('min') || selection.endsWith(' - min')) return '#38bdf8';
-  if (selection.includes('max') || selection.endsWith(' - max')) return '#f87171';
+  if (selection.includes('Tmin')) return '#38bdf8';
+  if (selection.includes('Tmax')) return '#f87171';
   return '#a78bfa';
 };
 
@@ -20,52 +22,40 @@ const buildChartData = () => {
   if (!props.data) return { labels: [], datasets: [] };
 
   const labels = new Set<number>();
-  const datasetMap: Record<string, {x: number, y: number}[]> = {};
+  const datasetMap: Record<string, number[]> = {};
 
-  const extractPoints = (block: any, keyTmin: string, keyTmax: string, keyBoth: string) => {
+  const extractPoints = (block: any, keyTmin: string, keyTmax: string) => {
     if (!block || !block.data) return;
     block.data.forEach((p: any) => {
       labels.add(p.year);
+      
       if (p.tmin_mean_c !== null && p.tmin_mean_c !== undefined) {
         if (!datasetMap[keyTmin]) datasetMap[keyTmin] = [];
-        datasetMap[keyTmin].push({ x: p.year, y: p.tmin_mean_c });
-        if (props.selections.includes(keyBoth)) {
-          const bothMinKey = keyBoth + '_min';
-          const bothMinArr = datasetMap[bothMinKey] ?? (datasetMap[bothMinKey] = []);
-          bothMinArr.push({ x: p.year, y: p.tmin_mean_c });
-        }
+        datasetMap[keyTmin].push({ x: p.year, y: p.tmin_mean_c } as any);
       }
+      
       if (p.tmax_mean_c !== null && p.tmax_mean_c !== undefined) {
         if (!datasetMap[keyTmax]) datasetMap[keyTmax] = [];
-        datasetMap[keyTmax].push({ x: p.year, y: p.tmax_mean_c });
-        if (props.selections.includes(keyBoth)) {
-          const bothMaxKey = keyBoth + '_max';
-          const bothMaxArr = datasetMap[bothMaxKey] ?? (datasetMap[bothMaxKey] = []);
-          bothMaxArr.push({ x: p.year, y: p.tmax_mean_c });
-        }
+        datasetMap[keyTmax].push({ x: p.year, y: p.tmax_mean_c } as any);
       }
     });
   };
 
-  extractPoints(props.data.year, 'Ganzes Jahr - min', 'Ganzes Jahr - max', 'Ganzes Jahr');
-  
+  extractPoints(props.data.year, 'Ganzes Jahr Tmin', 'Ganzes Jahr Tmax');
   if (props.data.seasons) {
-    extractPoints(props.data.seasons.WINTER, 'Winter - min', 'Winter - max', 'Winter');
-    extractPoints(props.data.seasons.SPRING, 'Frühling - min', 'Frühling - max', 'Frühling');
-    extractPoints(props.data.seasons.SUMMER, 'Sommer - min', 'Sommer - max', 'Sommer');
-    extractPoints(props.data.seasons.AUTUMN, 'Herbst - min', 'Herbst - max', 'Herbst');
+    extractPoints(props.data.seasons.WINTER, 'Winter Tmin', 'Winter Tmax');
+    extractPoints(props.data.seasons.SPRING, 'Frühling Tmin', 'Frühling Tmax');
+    extractPoints(props.data.seasons.SUMMER, 'Sommer Tmin', 'Sommer Tmax');
+    extractPoints(props.data.seasons.AUTUMN, 'Herbst Tmin', 'Herbst Tmax');
   }
 
   const sortedLabels = Array.from(labels).sort();
   const finalDatasets = [];
   
   for (const [key, points] of Object.entries(datasetMap)) {
-    const isBothDerivative = key.endsWith('_min') || key.endsWith('_max');
-    const originalSelection = isBothDerivative ? key.replace('_min', '').replace('_max', '') : key;
-
-    if (props.selections.includes(originalSelection)) {
+    if (props.selections.includes(key)) {
       finalDatasets.push({
-        label: key.replace('_min', ' (Min)').replace('_max', ' (Max)'),
+        label: key,
         data: points,
         borderColor: getColor(key),
         backgroundColor: getColor(key),
@@ -98,20 +88,23 @@ const updateChart = () => {
         x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.1)' } }
       },
       plugins: {
-        legend: { labels: { color: '#ffffff' } }
+        legend: { 
+          labels: { color: '#ffffff' },
+          onClick: (e, legendItem) => {
+            const label = legendItem.text;
+            emit('toggle-selection', label);
+          }
+        }
       }
     }
   });
 };
 
-onMounted(() => {
-  updateChart();
-});
+onMounted(() => updateChart());
 
 watch(() => [props.selections, props.data], () => {
   updateChart();
 }, { deep: true });
-
 </script>
 
 <template>
