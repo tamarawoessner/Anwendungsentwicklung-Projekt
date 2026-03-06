@@ -24,7 +24,7 @@ const handleClick = () => {
 
             <div class="top-right" v-if="station">
                 <img src="../assets/distance.png" alt="Distanz" class="small-icon">
-                <span>{{ station.distance_km.toFixed(1) }} km</span>
+                <span>{{ station.distance_km.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }} km</span>
             </div>
         </div>
         <div class="card-body">

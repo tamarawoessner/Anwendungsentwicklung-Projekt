@@ -2,11 +2,11 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import type { Station, SearchParams } from '../types';
 
-const lat = ref<number | null>(null);
-const lng = ref<number | null>(null);
+const lat = ref<string>('');
+const lng = ref<string>('');
 const radius = ref<number>(20);
-const startYear = ref<number | null>(null);
-const endYear = ref<number | null>(null);
+const startYear = ref<string>('');
+const endYear = ref<string>('');
 const limit = ref<number>(10);
 const formError = ref<string | null>(null);
 const latError = ref(false);
@@ -18,9 +18,14 @@ const filterWrapperRef = ref<HTMLElement | null>(null);
 const ALL_LIMIT = 500;
 const topLimitOptions = Array.from({ length: 10 }, (_, i) => i + 1);
 
+const parseCoord = (val: string): number => {
+  const cleaned = val.replace(',', '.').trim();
+  return cleaned === '' ? NaN : Number(cleaned);
+};
+
 const hasCoordinateInput = computed(() => {
-  if (lat.value === null || lng.value === null) return false;
-  return Number.isFinite(Number(lat.value)) && Number.isFinite(Number(lng.value));
+  if (lat.value.trim() === '' || lng.value.trim() === '') return false;
+  return Number.isFinite(parseCoord(lat.value)) && Number.isFinite(parseCoord(lng.value));
 });
 
 const clampRadius = (value: number) => Math.min(100, Math.max(1, Math.round(value)));
@@ -51,14 +56,33 @@ const clearEndYearError = () => {
 };
 
 const blockInvalidCoordinateChars = (event: KeyboardEvent) => {
-  if (event.key === 'e' || event.key === 'E' || event.key === '+') {
+  if (event.ctrlKey || event.metaKey) return;
+  const navKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+  if (navKeys.includes(event.key)) return;
+  if (!/^[0-9.,\-]$/.test(event.key)) {
     event.preventDefault();
   }
 };
 
 const blockInvalidCoordinatePaste = (event: ClipboardEvent) => {
   const pastedText = event.clipboardData?.getData('text') ?? '';
-  if (/[eE+]/.test(pastedText)) {
+  if (/[^0-9.,\-\s]/.test(pastedText)) {
+    event.preventDefault();
+  }
+};
+
+const blockInvalidYearChars = (event: KeyboardEvent) => {
+  if (event.ctrlKey || event.metaKey) return;
+  const navKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+  if (navKeys.includes(event.key)) return;
+  if (!/^[0-9]$/.test(event.key)) {
+    event.preventDefault();
+  }
+};
+
+const blockInvalidYearPaste = (event: ClipboardEvent) => {
+  const pastedText = event.clipboardData?.getData('text') ?? '';
+  if (/[^0-9]/.test(pastedText)) {
     event.preventDefault();
   }
 };
@@ -115,8 +139,10 @@ onUnmounted(() => {
 const triggerSearch = () => {
   normalizeRadius();
 
-  const latMissing = lat.value === null || lat.value === '' as unknown as number || !Number.isFinite(Number(lat.value));
-  const lngMissing = lng.value === null || lng.value === '' as unknown as number || !Number.isFinite(Number(lng.value));
+  const latParsed = parseCoord(lat.value);
+  const lngParsed = parseCoord(lng.value);
+  const latMissing = lat.value.trim() === '' || !Number.isFinite(latParsed);
+  const lngMissing = lng.value.trim() === '' || !Number.isFinite(lngParsed);
   latError.value = latMissing;
   lngError.value = lngMissing;
 
@@ -125,8 +151,8 @@ const triggerSearch = () => {
     return;
   }
 
-  const latValue = Number(lat.value);
-  const lngValue = Number(lng.value);
+  const latValue = latParsed;
+  const lngValue = lngParsed;
 
   if (latValue < -90 || latValue > 90 || lngValue < -180 || lngValue > 180) {
     latError.value = latValue < -90 || latValue > 90;
@@ -135,23 +161,26 @@ const triggerSearch = () => {
     return;
   }
 
-  if (startYear.value !== null || endYear.value !== null) {
+  const hasStart = startYear.value.trim() !== '';
+  const hasEnd = endYear.value.trim() !== '';
+
+  if (hasStart || hasEnd) {
     const sYear = Number(startYear.value);
     const eYear = Number(endYear.value);
 
-    if (startYear.value !== null && (sYear < 1000 || sYear > 9999)) {
+    if (hasStart && (sYear < 1000 || sYear > 9999)) {
       startYearError.value = true;
       formError.value = 'Das Startjahr muss vierstellig sein (z. B. 2002).';
       return;
     }
 
-    if (endYear.value !== null && (eYear < 1000 || eYear > 9999)) {
+    if (hasEnd && (eYear < 1000 || eYear > 9999)) {
       endYearError.value = true;
       formError.value = 'Das Endjahr muss vierstellig sein (z. B. 2024).';
       return;
     }
 
-    if (startYear.value !== null && endYear.value !== null && sYear > eYear) {
+    if (hasStart && hasEnd && sYear > eYear) {
       startYearError.value = true;
       endYearError.value = true;
       formError.value = 'Das Startjahr darf nicht nach dem Endjahr liegen.';
@@ -168,8 +197,8 @@ const triggerSearch = () => {
     lat: latValue,
     lng: lngValue,
     radius: Number(radius.value),
-    startYear: startYear.value,
-    endYear: endYear.value,
+    startYear: hasStart ? Number(startYear.value) : null,
+    endYear: hasEnd ? Number(endYear.value) : null,
     limit: limit.value
   };
   emit('search', paket);
@@ -188,12 +217,10 @@ const triggerSearch = () => {
     <div class="input-group">
         <label for="latitude">Breitengrad</label>
         <input
-          type="number"
+          type="text"
+          inputmode="decimal"
           id="latitude"
           v-model="lat"
-          step="any"
-          min="-90"
-          max="90"
           placeholder="48,06125"
           :class="['dark-input', { 'input-error': latError }]"
           @keydown="blockInvalidCoordinateChars"
@@ -205,12 +232,10 @@ const triggerSearch = () => {
     <div class="input-group">
         <label for="longitude">Längengrad</label>
         <input
-          type="number"
+          type="text"
+          inputmode="decimal"
           id="longitude"
           v-model="lng"
-          step="any"
-          min="-180"
-          max="180"
           placeholder="8,53461"
           :class="['dark-input', { 'input-error': lngError }]"
           @keydown="blockInvalidCoordinateChars"
@@ -240,12 +265,12 @@ const triggerSearch = () => {
     <div class="year-row">
         <div class="input-group">
             <label for="start-year">Startjahr</label>
-            <input type="number" id="start-year" v-model="startYear" placeholder="2002" :class="['dark-input', 'year-input', { 'input-error': startYearError }]" @input="clearStartYearError">
+            <input type="text" inputmode="numeric" id="start-year" v-model="startYear" maxlength="4" placeholder="2002" :class="['dark-input', 'year-input', { 'input-error': startYearError }]" @keydown="blockInvalidYearChars" @paste="blockInvalidYearPaste" @input="clearStartYearError">
         </div>
 
         <div class="input-group">
             <label for="end-year">Endjahr</label>
-            <input type="number" id="end-year" v-model="endYear" max="2025" placeholder="2016" :class="['dark-input', 'year-input', { 'input-error': endYearError }]" @input="clearEndYearError">
+            <input type="text" inputmode="numeric" id="end-year" v-model="endYear" maxlength="4" placeholder="2016" :class="['dark-input', 'year-input', { 'input-error': endYearError }]" @keydown="blockInvalidYearChars" @paste="blockInvalidYearPaste" @input="clearEndYearError">
         </div>
     </div>
 
