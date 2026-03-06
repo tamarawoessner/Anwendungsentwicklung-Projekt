@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/nunito": "^5.2.7",
     "chart.js": "^4.5.1",
     "leaflet": "^1.9.4",
     "vue": "^3.5.25",
