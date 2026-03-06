@@ -162,7 +162,23 @@ watch([activeSelections, startYearInput, endYearInput], () => {
   fetchStationData();
 }, { deep: true });
 
-const goBackToSearch = () => router.push({ name: 'search' });
+const goBackToSearch = () => {
+  const query: Record<string, string> = {};
+
+  const lat = route.query.lat;
+  const lng = route.query.lng;
+  const radiusKm = route.query.radius_km;
+  const limit = route.query.limit;
+
+  if (typeof lat === 'string' && lat.length > 0) query.lat = lat;
+  if (typeof lng === 'string' && lng.length > 0) query.lng = lng;
+  if (typeof radiusKm === 'string' && radiusKm.length > 0) query.radius_km = radiusKm;
+  if (typeof limit === 'string' && limit.length > 0) query.limit = limit;
+  if (startYearInput.value !== null) query.start_year = String(startYearInput.value);
+  if (endYearInput.value !== null) query.end_year = String(endYearInput.value);
+
+  router.push({ name: 'search', query });
+};
 </script>
 
 <template>
