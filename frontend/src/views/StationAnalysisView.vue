@@ -17,20 +17,25 @@ const activeSelections = ref<string[]>(['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax'])
 const fetchedStationData = ref<any>(null);
 const isLoading = ref(false);
 
-const startYearInput = ref<number>(1950);
-const endYearInput = ref<number>(2025);
+const parseYear = (value: unknown): number | null => {
+  const year = Number(value);
+  return Number.isFinite(year) ? year : null;
+};
+
+const startYearInput = ref<number | null>(parseYear(route.query.start_year));
+const endYearInput = ref<number | null>(parseYear(route.query.end_year));
 
 onMounted(() => {
   const name = (route.query.name as string) || props.stationId;
   const distanceKm = Number(route.query.distance_km) || 0;
-  const startYear = Number(route.query.start_year) || 1950;
-  const endYear = Number(route.query.end_year) || 2025;
+  const startYear = parseYear(route.query.start_year);
+  const endYear = parseYear(route.query.end_year);
 
   currentStation.value = {
     id: props.stationId,
     name: name,
     distanceKm: distanceKm,
-    period: `${startYear}-${endYear}`
+    period: startYear !== null && endYear !== null ? `${startYear}-${endYear}` : '—'
   };
 
   startYearInput.value = startYear;
@@ -90,12 +95,20 @@ const buildRequestPayload = () => {
 };
 
 const dateError = computed(() => {
+  if (startYearInput.value === null || endYearInput.value === null) {
+    return null;
+  }
+
   if (Number(startYearInput.value) >= Number(endYearInput.value)) {
     return "Das Startjahr muss vor dem Endjahr liegen.";
   }
 
   if (currentStation.value?.period) {
     const [dbStart, dbEnd] = currentStation.value.period.split('-').map(Number);
+
+    if (!Number.isFinite(dbStart) || !Number.isFinite(dbEnd)) {
+      return null;
+    }
     
     if (Number(startYearInput.value) < dbStart) {
       return `Daten erst ab ${dbStart} verfügbar.`;
@@ -109,6 +122,11 @@ const dateError = computed(() => {
 });
 
 const fetchStationData = async () => {
+  if (startYearInput.value === null || endYearInput.value === null) {
+    fetchedStationData.value = null;
+    return;
+  }
+
   if (startYearInput.value >= endYearInput.value) {
     fetchedStationData.value = null;
     return;
@@ -144,7 +162,23 @@ watch([activeSelections, startYearInput, endYearInput], () => {
   fetchStationData();
 }, { deep: true });
 
-const goBackToSearch = () => router.push({ name: 'search' });
+const goBackToSearch = () => {
+  const query: Record<string, string> = {};
+
+  const lat = route.query.lat;
+  const lng = route.query.lng;
+  const radiusKm = route.query.radius_km;
+  const limit = route.query.limit;
+
+  if (typeof lat === 'string' && lat.length > 0) query.lat = lat;
+  if (typeof lng === 'string' && lng.length > 0) query.lng = lng;
+  if (typeof radiusKm === 'string' && radiusKm.length > 0) query.radius_km = radiusKm;
+  if (typeof limit === 'string' && limit.length > 0) query.limit = limit;
+  if (startYearInput.value !== null) query.start_year = String(startYearInput.value);
+  if (endYearInput.value !== null) query.end_year = String(endYearInput.value);
+
+  router.push({ name: 'search', query });
+};
 </script>
 
 <template>
