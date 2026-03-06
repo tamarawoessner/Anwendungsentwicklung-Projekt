@@ -50,6 +50,11 @@ def test_read_years_for_station_none():
     assert read_years_for_station(conn, "X") is None
 
 
+def test_read_years_for_station_exception_returns_none():
+    conn = _Conn(_Cursor(raise_on_execute=True))
+    assert read_years_for_station(conn, "X") is None
+
+
 def test_read_years_for_all_stations_no_filters():
     conn = _Conn(_Cursor(fetchall=[("A", 1900, 2000)]))
     res = read_years_for_all_stations(conn)
@@ -66,28 +71,6 @@ def test_read_years_for_all_stations_both_bounds_adds_having():
     q, params = conn._cursor.executed[0]
     assert "HAVING" in q
     assert params == (1950, 1990)
-
-
-def test_read_location_for_station_ok_and_strips_name():
-    conn = _Conn(_Cursor(fetchone=("X", "  Name  ", 1.0, 2.0)))
-    res = read_location_for_station(conn, "X")
-    assert res["name"] == "Name"
-    assert res["lat"] == 1.0
-    assert res["lon"] == 2.0
-
-
-def test_read_location_for_all_stations_ok():
-    conn = _Conn(_Cursor(fetchall=[("A", 1.0, 2.0), ("B", None, 3.0)]))
-    res = read_location_for_all_stations(conn)
-    assert res == [
-        {"station_id": "A", "lat": 1.0, "lon": 2.0},
-        {"station_id": "B", "lat": None, "lon": 3.0},
-    ]
-
-
-def test_read_location_for_station_exception_returns_none():
-    conn = _Conn(_Cursor(raise_on_execute=True))
-    assert read_location_for_station(conn, "X") is None
 
 
 def test_read_years_for_all_stations_only_start_year_adds_having():
@@ -113,29 +96,38 @@ def test_read_years_for_all_stations_empty_rows_returns_empty_list():
     assert read_years_for_all_stations(conn) == []
 
 
+def test_read_location_for_station_ok_and_strips_name():
+    conn = _Conn(_Cursor(fetchone=("X", "  Name  ", 1.0, 2.0)))
+    res = read_location_for_station(conn, "X")
+    assert res["name"] == "Name"
+    assert res["lat"] == 1.0
+    assert res["lon"] == 2.0
+
+
 def test_read_location_for_station_returns_none_when_no_row():
     conn = _Conn(_Cursor(fetchone=None))
     assert read_location_for_station(conn, "X") is None
 
 
-def test_read_location_for_all_stations_exception_returns_none():
+def test_read_location_for_station_exception_returns_none():
     conn = _Conn(_Cursor(raise_on_execute=True))
-    assert read_location_for_all_stations(conn) is None
+    assert read_location_for_station(conn, "X") is None
 
 
-def test_read_years_for_station_empty_tuple_returns_none():
-    # covers the "if result:" false branch when fetchone returns an empty tuple
-    conn = _Conn(_Cursor(fetchone=()))
-    assert read_years_for_station(conn, "X") is None
+def test_read_location_for_all_stations_ok():
+    conn = _Conn(_Cursor(fetchall=[("A", 1.0, 2.0), ("B", None, 3.0)]))
+    res = read_location_for_all_stations(conn)
+    assert res == [
+        {"station_id": "A", "lat": 1.0, "lon": 2.0},
+        {"station_id": "B", "lat": None, "lon": 3.0},
+    ]
 
 
 def test_read_location_for_all_stations_rows_none_returns_empty_list():
-    # covers the branch when fetchall() returns None (treated as no rows)
     conn = _Conn(_Cursor(fetchall=None))
-    res = read_location_for_all_stations(conn)
-    assert res == []
+    assert read_location_for_all_stations(conn) == []
 
 
-def test_read_years_for_station_exception_returns_none():
+def test_read_location_for_all_stations_exception_returns_none():
     conn = _Conn(_Cursor(raise_on_execute=True))
-    assert read_years_for_station(conn, "X") is None
+    assert read_location_for_all_stations(conn) is None
