@@ -1,147 +1,133 @@
-def read_years_for_station(conn, station_id):
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-            SELECT
-                MIN(first_year) AS start_year,
-                MAX(last_year)  AS end_year
-            FROM ghcn.inventory
-            WHERE station_id = %s
-              AND element IN ('TMIN', 'TMAX');
-            """,
-                (station_id,),
-            )
-            result = cursor.fetchone()
-            if result:
-                start_year, end_year = result
-                return {
-                    "station_id": station_id,
-                    "start_year": start_year,
-                    "end_year": end_year,
-                }
-            else:
-                return None
-    except Exception as e:
-        print(f"Error reading years for station {station_id}: {e}")
-        return None
+from app.infrastructure.db.station_repository import (
+    read_years_for_station,
+    read_years_for_all_stations,
+    read_location_for_station,
+    read_location_for_all_stations,
+)
 
 
-def read_years_for_all_stations(
-    conn,
-    required_start_year=None,
-    required_end_year=None,
-):
-    try:
-        with conn.cursor() as cursor:
-            query = """
-                SELECT
-                    station_id,
-                    MIN(first_year) AS start_year,
-                    MAX(last_year)  AS end_year
-                FROM ghcn.inventory
-                WHERE element IN ('TMIN', 'TMAX')
-                GROUP BY station_id
-            """
+class _Cursor:
+    def __init__(self, fetchone=None, fetchall=None, raise_on_execute=False):
+        self._fetchone = fetchone
+        self._fetchall = fetchall
+        self.raise_on_execute = raise_on_execute
+        self.executed = []
 
-            params = []
-            having_clauses = []
+    def execute(self, query, params=None):
+        if self.raise_on_execute:
+            raise Exception("boom")
+        self.executed.append((query, params))
 
-            if required_start_year is not None and required_end_year is not None:
-                having_clauses.append("MIN(first_year) <= %s")
-                having_clauses.append("MAX(last_year) >= %s")
-                params.extend([required_start_year, required_end_year])
-            elif required_start_year is not None:
-                having_clauses.append("MAX(last_year) >= %s")
-                params.append(required_start_year)
-            elif required_end_year is not None:
-                having_clauses.append("MIN(first_year) <= %s")
-                params.append(required_end_year)
+    def fetchone(self):
+        return self._fetchone
 
-            if having_clauses:
-                query += "\nHAVING " + " AND ".join(having_clauses)
+    def fetchall(self):
+        return self._fetchall
 
-            query += "\nORDER BY station_id;"
+    def __enter__(self):
+        return self
 
-            cursor.execute(query, tuple(params))
-            rows = cursor.fetchall()
-
-        if not rows:
-            return []
-
-        return [
-            {"station_id": sid, "start_year": start_year, "end_year": end_year}
-            for (sid, start_year, end_year) in rows
-        ]
-
-    except Exception as e:
-        print(f"Error reading years for all stations: {e}")
-        return None
+    def __exit__(self, exc_type, exc, tb):
+        return False
 
 
-def read_location_for_station(conn, station_id: str):
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT station_id, name, lat, lon
-                FROM ghcn.stations
-                WHERE station_id = %s;
-                """,
-                (station_id,),
-            )
-            result = cursor.fetchone()
+class _Conn:
+    def __init__(self, cursor):
+        self._cursor = cursor
 
-            if result:
-                sid, name, lat, lon = result
-                return {
-                    "station_id": sid,
-                    "name": (name or "").strip(),
-                    "lat": float(lat) if lat is not None else None,
-                    "lon": float(lon) if lon is not None else None,
-                }
-            else:
-                return None
-
-    except Exception as e:
-        print(f"Error reading station basic data for station {station_id}: {e}")
-        return None
+    def cursor(self):
+        return self._cursor
 
 
-def read_location_for_all_stations(conn):
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT DISTINCT s.station_id, s.lat, s.lon
-                FROM ghcn.stations s
-                JOIN ghcn.inventory i
-                  ON i.station_id = s.station_id
-                WHERE i.element IN ('TMIN', 'TMAX')
-                ORDER BY s.station_id;
-                """
-            )
-            rows = cursor.fetchall()
-
-            if rows:
-                return [
-                    {
-                        "station_id": sid,
-                        "lat": float(lat) if lat is not None else None,
-                        "lon": float(lon) if lon is not None else None,
-                    }
-                    for (sid, lat, lon) in rows
-                ]
-            else:
-                return []
-
-    except Exception as e:
-        print(f"Error reading station ids and locations with TMIN/TMAX: {e}")
-        return None
+def test_read_years_for_station_ok():
+    conn = _Conn(_Cursor(fetchone=(1900, 2000)))
+    res = read_years_for_station(conn, "X")
+    assert res == {"station_id": "X", "start_year": 1900, "end_year": 2000}
 
 
-if __name__ == "__main__":
-    from app.infrastructure.db.connection import connect_to_db
+def test_read_years_for_station_none():
+    conn = _Conn(_Cursor(fetchone=None))
+    assert read_years_for_station(conn, "X") is None
 
-    conn = connect_to_db()
-    print(read_years_for_all_stations(conn))
+
+def test_read_years_for_station_exception_returns_none():
+    conn = _Conn(_Cursor(raise_on_execute=True))
+    assert read_years_for_station(conn, "X") is None
+
+
+def test_read_years_for_all_stations_no_filters():
+    conn = _Conn(_Cursor(fetchall=[("A", 1900, 2000)]))
+    res = read_years_for_all_stations(conn)
+    assert res == [{"station_id": "A", "start_year": 1900, "end_year": 2000}]
+    q, params = conn._cursor.executed[0]
+    assert "HAVING" not in q
+    assert params == ()
+
+
+def test_read_years_for_all_stations_both_bounds_adds_having():
+    conn = _Conn(_Cursor(fetchall=[]))
+    res = read_years_for_all_stations(conn, required_start_year=1950, required_end_year=1990)
+    assert res == []
+    q, params = conn._cursor.executed[0]
+    assert "HAVING" in q
+    assert params == (1950, 1990)
+
+
+def test_read_years_for_all_stations_only_start_year_adds_having():
+    conn = _Conn(_Cursor(fetchall=[]))
+    res = read_years_for_all_stations(conn, required_start_year=1980)
+    assert res == []
+    q, params = conn._cursor.executed[0]
+    assert "HAVING" in q
+    assert params == (1980,)
+
+
+def test_read_years_for_all_stations_only_end_year_adds_having():
+    conn = _Conn(_Cursor(fetchall=[]))
+    res = read_years_for_all_stations(conn, required_end_year=1980)
+    assert res == []
+    q, params = conn._cursor.executed[0]
+    assert "HAVING" in q
+    assert params == (1980,)
+
+
+def test_read_years_for_all_stations_empty_rows_returns_empty_list():
+    conn = _Conn(_Cursor(fetchall=[]))
+    assert read_years_for_all_stations(conn) == []
+
+
+def test_read_location_for_station_ok_and_strips_name():
+    conn = _Conn(_Cursor(fetchone=("X", "  Name  ", 1.0, 2.0)))
+    res = read_location_for_station(conn, "X")
+    assert res["name"] == "Name"
+    assert res["lat"] == 1.0
+    assert res["lon"] == 2.0
+
+
+def test_read_location_for_station_returns_none_when_no_row():
+    conn = _Conn(_Cursor(fetchone=None))
+    assert read_location_for_station(conn, "X") is None
+
+
+def test_read_location_for_station_exception_returns_none():
+    conn = _Conn(_Cursor(raise_on_execute=True))
+    assert read_location_for_station(conn, "X") is None
+
+
+def test_read_location_for_all_stations_ok():
+    conn = _Conn(_Cursor(fetchall=[("A", "NameA", 1.0, 2.0), ("B", "NameB", None, 3.0)]))
+    res = read_location_for_all_stations(conn)
+    assert res == [
+        {"station_id": "A", "name": "NameA", "lat": 1.0, "lon": 2.0},
+        {"station_id": "B", "name": "NameB", "lat": None, "lon": 3.0},
+    ]
+
+
+def test_read_location_for_all_stations_rows_none_returns_empty_list():
+    conn = _Conn(_Cursor(fetchall=None))
+    assert read_location_for_all_stations(conn) == []
+
+
+def test_read_location_for_all_stations_exception_returns_none():
+    conn = _Conn(_Cursor(raise_on_execute=True))
+    assert read_location_for_all_stations(conn) is None
