@@ -9,15 +9,18 @@ const startYear = ref<number | null>(null);
 const endYear = ref<number | null>(null);
 const limit = ref<number>(10);
 const formError = ref<string | null>(null);
+const latError = ref(false);
+const lngError = ref(false);
+const startYearError = ref(false);
+const endYearError = ref(false);
 const isFilterMenuOpen = ref(false);
 const filterWrapperRef = ref<HTMLElement | null>(null);
 const ALL_LIMIT = 500;
 const topLimitOptions = Array.from({ length: 10 }, (_, i) => i + 1);
 
 const hasCoordinateInput = computed(() => {
-  const latValue = Number(lat.value);
-  const lngValue = Number(lng.value);
-  return Number.isFinite(latValue) && Number.isFinite(lngValue);
+  if (lat.value === null || lng.value === null) return false;
+  return Number.isFinite(Number(lat.value)) && Number.isFinite(Number(lng.value));
 });
 
 const clampRadius = (value: number) => Math.min(100, Math.max(1, Math.round(value)));
@@ -27,7 +30,23 @@ const normalizeRadius = () => {
   radius.value = Number.isFinite(parsed) ? clampRadius(parsed) : 20;
 };
 
-const clearFormError = () => {
+const clearLatError = () => {
+  latError.value = false;
+  formError.value = null;
+};
+
+const clearLngError = () => {
+  lngError.value = false;
+  formError.value = null;
+};
+
+const clearStartYearError = () => {
+  startYearError.value = false;
+  formError.value = null;
+};
+
+const clearEndYearError = () => {
+  endYearError.value = false;
   formError.value = null;
 };
 
@@ -96,15 +115,23 @@ onUnmounted(() => {
 const triggerSearch = () => {
   normalizeRadius();
 
-  const latValue = Number(lat.value);
-  const lngValue = Number(lng.value);
-  if (!Number.isFinite(latValue) || !Number.isFinite(lngValue)) {
-    formError.value = 'Bitte Breiten- und Laengengrad ausfuellen.';
+  const latMissing = lat.value === null || lat.value === '' as unknown as number || !Number.isFinite(Number(lat.value));
+  const lngMissing = lng.value === null || lng.value === '' as unknown as number || !Number.isFinite(Number(lng.value));
+  latError.value = latMissing;
+  lngError.value = lngMissing;
+
+  if (latMissing || lngMissing) {
+    formError.value = 'Bitte Breiten- und Längengrad ausfüllen.';
     return;
   }
 
+  const latValue = Number(lat.value);
+  const lngValue = Number(lng.value);
+
   if (latValue < -90 || latValue > 90 || lngValue < -180 || lngValue > 180) {
-    formError.value = 'Ungueltige Koordinaten: Breite -90 bis 90, Laenge -180 bis 180.';
+    latError.value = latValue < -90 || latValue > 90;
+    lngError.value = lngValue < -180 || lngValue > 180;
+    formError.value = 'Ung\u00FCltige Koordinaten: Breite -90 bis 90, L\u00E4nge -180 bis 180.';
     return;
   }
 
@@ -113,22 +140,30 @@ const triggerSearch = () => {
     const eYear = Number(endYear.value);
 
     if (startYear.value !== null && (sYear < 1000 || sYear > 9999)) {
+      startYearError.value = true;
       formError.value = 'Das Startjahr muss vierstellig sein (z. B. 2002).';
       return;
     }
 
     if (endYear.value !== null && (eYear < 1000 || eYear > 9999)) {
+      endYearError.value = true;
       formError.value = 'Das Endjahr muss vierstellig sein (z. B. 2024).';
       return;
     }
 
     if (startYear.value !== null && endYear.value !== null && sYear > eYear) {
+      startYearError.value = true;
+      endYearError.value = true;
       formError.value = 'Das Startjahr darf nicht nach dem Endjahr liegen.';
       return;
     }
   }
 
   formError.value = null;
+  latError.value = false;
+  lngError.value = false;
+  startYearError.value = false;
+  endYearError.value = false;
   const paket = {
     lat: latValue,
     lng: lngValue,
@@ -160,10 +195,10 @@ const triggerSearch = () => {
           min="-90"
           max="90"
           placeholder="48,06125"
-          class="dark-input"
+          :class="['dark-input', { 'input-error': latError }]"
           @keydown="blockInvalidCoordinateChars"
           @paste="blockInvalidCoordinatePaste"
-          @input="clearFormError"
+          @input="clearLatError"
         >
     </div>
 
@@ -177,10 +212,10 @@ const triggerSearch = () => {
           min="-180"
           max="180"
           placeholder="8,53461"
-          class="dark-input"
+          :class="['dark-input', { 'input-error': lngError }]"
           @keydown="blockInvalidCoordinateChars"
           @paste="blockInvalidCoordinatePaste"
-          @input="clearFormError"
+          @input="clearLngError"
         >
     </div>
 
@@ -205,17 +240,17 @@ const triggerSearch = () => {
     <div class="year-row">
         <div class="input-group">
             <label for="start-year">Startjahr</label>
-            <input type="number" id="start-year" v-model="startYear" placeholder="2002" class="dark-input year-input">
+            <input type="number" id="start-year" v-model="startYear" placeholder="2002" :class="['dark-input', 'year-input', { 'input-error': startYearError }]" @input="clearStartYearError">
         </div>
 
         <div class="input-group">
             <label for="end-year">Endjahr</label>
-            <input type="number" id="end-year" v-model="endYear" max="2025" placeholder="2016" class="dark-input year-input">
+            <input type="number" id="end-year" v-model="endYear" max="2025" placeholder="2016" :class="['dark-input', 'year-input', { 'input-error': endYearError }]" @input="clearEndYearError">
         </div>
     </div>
 
     <p v-if="formError" class="form-error">{{ formError }}</p>
-    <button class="search-button" :disabled="!hasCoordinateInput" @click="triggerSearch">Stationen suchen</button>
+    <button class="search-button" @click="triggerSearch">Stationen suchen</button>
 </div>
 
         <div class="subheader-group">
@@ -323,6 +358,31 @@ label {
   border-color: #a855f7; 
 }
 
+#latitude::-webkit-outer-spin-button,
+#latitude::-webkit-inner-spin-button,
+#longitude::-webkit-outer-spin-button,
+#longitude::-webkit-inner-spin-button,
+.slider-value::-webkit-outer-spin-button,
+.slider-value::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#latitude,
+#longitude,
+.slider-value {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.input-error {
+  border-color: #f87171;
+}
+
+.input-error:focus {
+  border-color: #ef4444;
+}
+
 .slider-wrapper {
   display: flex;
   align-items: center;
@@ -385,7 +445,8 @@ label {
 }
 
 .year-input {
-  width: 85%; 
+  width: 100%;
+  color-scheme: dark;
 }
 
 .search-button {
