@@ -5,8 +5,8 @@ import type { Station, SearchParams } from '../types';
 const lat = ref<string>('');
 const lng = ref<string>('');
 const radius = ref<number>(20);
-const startYear = ref<string>('');
-const endYear = ref<string>('');
+const startYear = ref<number | null>(null);
+const endYear = ref<number | null>(null);
 const limit = ref<number>(10);
 const formError = ref<string | null>(null);
 const latError = ref(false);
@@ -161,8 +161,8 @@ const triggerSearch = () => {
     return;
   }
 
-  const hasStart = startYear.value.trim() !== '';
-  const hasEnd = endYear.value.trim() !== '';
+  const hasStart = startYear.value !== null && String(startYear.value).trim() !== '';
+  const hasEnd = endYear.value !== null && String(endYear.value).trim() !== '';
 
   if (hasStart || hasEnd) {
     const sYear = Number(startYear.value);
@@ -265,12 +265,12 @@ const triggerSearch = () => {
     <div class="year-row">
         <div class="input-group">
             <label for="start-year">Startjahr</label>
-            <input type="text" inputmode="numeric" id="start-year" v-model="startYear" maxlength="4" placeholder="2002" :class="['dark-input', 'year-input', { 'input-error': startYearError }]" @keydown="blockInvalidYearChars" @paste="blockInvalidYearPaste" @input="clearStartYearError">
+            <input type="number" id="start-year" v-model="startYear" placeholder="2002" :class="['dark-input', 'year-input', { 'input-error': startYearError }]" @keydown="blockInvalidYearChars" @paste="blockInvalidYearPaste" @input="clearStartYearError">
         </div>
 
         <div class="input-group">
             <label for="end-year">Endjahr</label>
-            <input type="text" inputmode="numeric" id="end-year" v-model="endYear" maxlength="4" placeholder="2016" :class="['dark-input', 'year-input', { 'input-error': endYearError }]" @keydown="blockInvalidYearChars" @paste="blockInvalidYearPaste" @input="clearEndYearError">
+            <input type="number" id="end-year" v-model="endYear" placeholder="2016" :class="['dark-input', 'year-input', { 'input-error': endYearError }]" @keydown="blockInvalidYearChars" @paste="blockInvalidYearPaste" @input="clearEndYearError">
         </div>
     </div>
 
