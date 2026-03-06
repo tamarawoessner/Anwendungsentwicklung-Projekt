@@ -15,6 +15,7 @@ def read_years_for_station(conn, station_id):
             result = cursor.fetchone()
             if result:
                 start_year, end_year = result
+                end_year = min(end_year, 2025)
                 return {
                     "station_id": station_id,
                     "start_year": start_year,
@@ -70,7 +71,11 @@ def read_years_for_all_stations(
             return []
 
         return [
-            {"station_id": sid, "start_year": start_year, "end_year": end_year}
+            {
+                "station_id": sid,
+                "start_year": start_year,
+                "end_year": min(end_year, 2025),
+            }
             for (sid, start_year, end_year) in rows
         ]
 
