@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import StationMap from '../components/StationMap.vue';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import Sidebar from '../components/Sidebar.vue';
 import NearbyCard from '../components/NearbyCard.vue';
 import type { Station, SearchParams } from '../types';
 
 const router = useRouter();
+const route = useRoute();
 
 const stations = ref<Station[]>([]);
 const resultsCount = ref<number | null>(null);
@@ -16,6 +17,7 @@ const searchRadius = ref<number | null>(null);
 const hasSearched = ref<boolean>(false);
 const searchStartYear = ref<number | null>(null);
 const searchEndYear = ref<number | null>(null);
+const searchLimit = ref<number>(10);
 
 const CARD_WIDTH = 300;
 const CARD_GAP = 24;
@@ -34,6 +36,22 @@ const cardsToDisplay = computed(() => {
   return Math.min(stations.value.length, maxSlots);
 });
 
+const parseQueryNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const sidebarInitialSearch = computed(() => ({
+  lat: searchLat.value,
+  lng: searchLng.value,
+  radius: searchRadius.value,
+  startYear: searchStartYear.value,
+  endYear: searchEndYear.value,
+  limit: searchLimit.value
+}));
+
 onMounted(() => {
   if (nearbyRef.value) {
     resizeObserver = new ResizeObserver((entries) => {
@@ -43,6 +61,29 @@ onMounted(() => {
     });
     resizeObserver.observe(nearbyRef.value);
   }
+
+  const queryLat = parseQueryNumber(route.query.lat);
+  const queryLng = parseQueryNumber(route.query.lng);
+
+  if (queryLat === null || queryLng === null) {
+    return;
+  }
+
+  const queryRadius = parseQueryNumber(route.query.radius_km);
+  const queryLimit = parseQueryNumber(route.query.limit);
+  const queryStartYear = parseQueryNumber(route.query.start_year);
+  const queryEndYear = parseQueryNumber(route.query.end_year);
+
+  const payload: SearchParams = {
+    lat: queryLat,
+    lng: queryLng,
+    radius: queryRadius !== null ? Math.min(100, Math.max(1, Math.round(queryRadius))) : 20,
+    startYear: queryStartYear,
+    endYear: queryEndYear,
+    limit: queryLimit !== null ? Math.max(1, Math.round(queryLimit)) : 10
+  };
+
+  handleSearch(payload);
 });
 
 onUnmounted(() => {
@@ -56,6 +97,7 @@ const handleSearch = async (payload: SearchParams) => {
   searchRadius.value = payload.radius;
   searchStartYear.value = payload.startYear;
   searchEndYear.value = payload.endYear;
+  searchLimit.value = payload.limit;
 
   const apiPayload = {
     lat: payload.lat,
@@ -89,15 +131,25 @@ const handleSearch = async (payload: SearchParams) => {
 };
 
 const navigateToAnalysis = (station: Station) => {
+  const resolvedStartYear = searchStartYear.value != null ? searchStartYear.value : station.start_year;
+  const resolvedEndYear = searchEndYear.value != null ? searchEndYear.value : station.end_year;
+
+  const query: Record<string, string> = {
+    name: station.name,
+    distance_km: String(station.distance_km),
+    start_year: String(resolvedStartYear),
+    end_year: String(resolvedEndYear),
+    radius_km: searchRadius.value != null ? String(searchRadius.value) : '20',
+    limit: String(searchLimit.value)
+  };
+
+  if (searchLat.value != null) query.lat = String(searchLat.value);
+  if (searchLng.value != null) query.lng = String(searchLng.value);
+
   router.push({
     name: 'analyse',
     params: { stationId: station.station_id },
-    query: {
-      name: station.name,
-      distance_km: String(station.distance_km),
-      start_year: searchStartYear.value != null ? String(searchStartYear.value) : String(station.start_year),
-      end_year: searchEndYear.value != null ? String(searchEndYear.value) : String(station.end_year)
-    }
+    query
   });
 };
 </script>
@@ -109,6 +161,7 @@ const navigateToAnalysis = (station: Station) => {
       :stations="stations" 
       :results-count="resultsCount" 
       :has-searched="hasSearched" 
+      :initial-search="sidebarInitialSearch"
       @search="handleSearch" 
       @station-select="navigateToAnalysis"
     />

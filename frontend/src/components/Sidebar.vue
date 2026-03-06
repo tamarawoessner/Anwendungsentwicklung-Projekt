@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { Station, SearchParams } from '../types';
 
 const lat = ref<string>('');
@@ -104,10 +104,18 @@ const emit = defineEmits<{
   (e: 'search', payload: SearchParams): void
   (e: 'station-select', station: Station): void
 }>();
-defineProps<{
+const props = defineProps<{
   stations: Station[];
   resultsCount: number | null;
   hasSearched: boolean;
+  initialSearch?: {
+    lat: number | null;
+    lng: number | null;
+    radius: number | null;
+    startYear: number | null;
+    endYear: number | null;
+    limit: number;
+  };
 }>();
 
 const setLimit = (newLimit: number) => {
@@ -117,6 +125,17 @@ const setLimit = (newLimit: number) => {
   if (hasCoordinateInput.value) {
     triggerSearch();
   }
+};
+
+const applyInitialSearch = () => {
+  if (!props.initialSearch) return;
+
+  lat.value = props.initialSearch.lat !== null ? String(props.initialSearch.lat) : '';
+  lng.value = props.initialSearch.lng !== null ? String(props.initialSearch.lng) : '';
+  radius.value = props.initialSearch.radius !== null ? clampRadius(props.initialSearch.radius) : 20;
+  startYear.value = props.initialSearch.startYear;
+  endYear.value = props.initialSearch.endYear;
+  limit.value = Math.max(1, Math.round(props.initialSearch.limit));
 };
 
 const handleOutsideClick = (event: MouseEvent) => {
@@ -129,12 +148,18 @@ const handleOutsideClick = (event: MouseEvent) => {
 };
 
 onMounted(() => {
+  applyInitialSearch();
+
   document.addEventListener('click', handleOutsideClick);
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick);
 });
+
+watch(() => props.initialSearch, () => {
+  applyInitialSearch();
+}, { deep: true });
 
 const triggerSearch = () => {
   normalizeRadius();
