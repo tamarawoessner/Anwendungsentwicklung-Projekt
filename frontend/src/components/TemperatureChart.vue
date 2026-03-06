@@ -88,6 +88,17 @@ const updateChart = () => {
         x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.1)' } }
       },
       plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const rawValue = context.parsed?.y;
+              if (rawValue === null || rawValue === undefined || Number.isNaN(rawValue)) {
+                return `${context.dataset.label}: -`;
+              }
+              return `${context.dataset.label}: ${Number(rawValue).toFixed(1)} °C`;
+            }
+          }
+        },
         legend: { 
           labels: { color: '#ffffff' },
           onClick: (_e, legendItem) => {
