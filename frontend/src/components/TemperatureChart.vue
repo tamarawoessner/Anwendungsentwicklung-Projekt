@@ -22,7 +22,7 @@ const buildChartData = () => {
   if (!props.data) return { labels: [], datasets: [] };
 
   const labels = new Set<number>();
-  const datasetMap: Record<string, number[]> = {};
+  const datasetMap: Record<string, Map<number, number>> = {};
 
   const extractPoints = (block: any, keyTmin: string, keyTmax: string) => {
     if (!block || !block.data) return;
@@ -30,13 +30,13 @@ const buildChartData = () => {
       labels.add(p.year);
       
       if (p.tmin_mean_c !== null && p.tmin_mean_c !== undefined) {
-        if (!datasetMap[keyTmin]) datasetMap[keyTmin] = [];
-        datasetMap[keyTmin].push({ x: p.year, y: p.tmin_mean_c } as any);
+        if (!datasetMap[keyTmin]) datasetMap[keyTmin] = new Map<number, number>();
+        datasetMap[keyTmin].set(p.year, p.tmin_mean_c);
       }
       
       if (p.tmax_mean_c !== null && p.tmax_mean_c !== undefined) {
-        if (!datasetMap[keyTmax]) datasetMap[keyTmax] = [];
-        datasetMap[keyTmax].push({ x: p.year, y: p.tmax_mean_c } as any);
+        if (!datasetMap[keyTmax]) datasetMap[keyTmax] = new Map<number, number>();
+        datasetMap[keyTmax].set(p.year, p.tmax_mean_c);
       }
     });
   };
@@ -49,14 +49,14 @@ const buildChartData = () => {
     extractPoints(props.data.seasons.AUTUMN, 'Herbst Tmin', 'Herbst Tmax');
   }
 
-  const sortedLabels = Array.from(labels).sort();
+  const sortedLabels = Array.from(labels).sort((a, b) => a - b);
   const finalDatasets = [];
   
-  for (const [key, points] of Object.entries(datasetMap)) {
+  for (const [key, pointsByYear] of Object.entries(datasetMap)) {
     if (props.selections.includes(key)) {
       finalDatasets.push({
         label: key,
-        data: points,
+        data: sortedLabels.map((year) => pointsByYear.get(year) ?? null),
         borderColor: getColor(key),
         backgroundColor: getColor(key),
         spanGaps: false 
@@ -90,7 +90,7 @@ const updateChart = () => {
       plugins: {
         legend: { 
           labels: { color: '#ffffff' },
-          onClick: (e, legendItem) => {
+          onClick: (_e, legendItem) => {
             const label = legendItem.text;
             emit('toggle-selection', label);
           }
