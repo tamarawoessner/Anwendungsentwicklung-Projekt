@@ -153,7 +153,6 @@ const navigateToAnalysis = (station: Station) => {
   overflow: hidden;
   background-color: #0b1120; 
   color: white;
-  font-family: sans-serif;
 }
 
 .map-area {
