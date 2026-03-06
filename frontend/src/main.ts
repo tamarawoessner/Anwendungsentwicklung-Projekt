@@ -1,3 +1,6 @@
+import '@fontsource/nunito/400.css'
+import '@fontsource/nunito/500.css'
+import '@fontsource/nunito/700.css'
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
