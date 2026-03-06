@@ -8,7 +8,7 @@ const props = defineProps<{
 
 const formatTemp = (val: number | null | undefined) => {
   if (val === null || val === undefined) return '-';
-  return Number(val).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return `${Number(val).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} °C`;
 };
 
 const tableData = computed(() => {

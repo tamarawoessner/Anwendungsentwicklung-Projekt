@@ -167,15 +167,21 @@ const goBackToSearch = () => {
 
   const lat = route.query.lat;
   const lng = route.query.lng;
+  const latInput = route.query.lat_input;
+  const lngInput = route.query.lng_input;
   const radiusKm = route.query.radius_km;
   const limit = route.query.limit;
+  const searchStartYear = route.query.search_start_year;
+  const searchEndYear = route.query.search_end_year;
 
   if (typeof lat === 'string' && lat.length > 0) query.lat = lat;
   if (typeof lng === 'string' && lng.length > 0) query.lng = lng;
+  if (typeof latInput === 'string' && latInput.length > 0) query.lat_input = latInput;
+  if (typeof lngInput === 'string' && lngInput.length > 0) query.lng_input = lngInput;
   if (typeof radiusKm === 'string' && radiusKm.length > 0) query.radius_km = radiusKm;
   if (typeof limit === 'string' && limit.length > 0) query.limit = limit;
-  if (startYearInput.value !== null) query.start_year = String(startYearInput.value);
-  if (endYearInput.value !== null) query.end_year = String(endYearInput.value);
+  if (typeof searchStartYear === 'string' && searchStartYear.length > 0) query.start_year = searchStartYear;
+  if (typeof searchEndYear === 'string' && searchEndYear.length > 0) query.end_year = searchEndYear;
 
   router.push({ name: 'search', query });
 };
@@ -354,6 +360,10 @@ const goBackToSearch = () => {
 
 .dark-input:focus {
   border-color: #a855f7; 
+}
+
+.compact-year-field {
+  color-scheme: dark;
 }
 
 .table-section {
