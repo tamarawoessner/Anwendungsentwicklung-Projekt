@@ -11,6 +11,8 @@ export interface Station {
 export interface SearchParams {
   lat: number | null;
   lng: number | null;
+  latInput?: string;
+  lngInput?: string;
   radius: number;
   startYear: number | null;
   endYear: number | null;
