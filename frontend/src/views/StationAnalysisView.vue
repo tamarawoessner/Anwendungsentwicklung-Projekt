@@ -362,6 +362,10 @@ const goBackToSearch = () => {
   border-color: #a855f7; 
 }
 
+.compact-year-field {
+  color-scheme: dark;
+}
+
 .table-section {
   flex: 1;
   min-height: 0;
