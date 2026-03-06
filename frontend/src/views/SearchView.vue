@@ -8,11 +8,14 @@ import type { Station, SearchParams } from '../types';
 
 const router = useRouter();
 const route = useRoute();
+const SEARCH_STATE_KEY = 'weather-search-state';
 
 const stations = ref<Station[]>([]);
 const resultsCount = ref<number | null>(null);
 const searchLat = ref<number | null>(null);
 const searchLng = ref<number | null>(null);
+const searchLatInput = ref<string>('');
+const searchLngInput = ref<string>('');
 const searchRadius = ref<number | null>(null);
 const hasSearched = ref<boolean>(false);
 const searchStartYear = ref<number | null>(null);
@@ -43,9 +46,44 @@ const parseQueryNumber = (value: unknown): number | null => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const persistSearchState = (payload: SearchParams) => {
+  sessionStorage.setItem(SEARCH_STATE_KEY, JSON.stringify(payload));
+};
+
+const readPersistedSearchState = (): SearchParams | null => {
+  const raw = sessionStorage.getItem(SEARCH_STATE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<SearchParams>;
+    const lat = parseQueryNumber(parsed.lat);
+    const lng = parseQueryNumber(parsed.lng);
+
+    if (lat === null || lng === null) {
+      return null;
+    }
+
+    const radius = parseQueryNumber(parsed.radius);
+    const limit = parseQueryNumber(parsed.limit);
+
+    return {
+      lat,
+      lng,
+      radius: radius !== null ? Math.min(100, Math.max(1, Math.round(radius))) : 20,
+      startYear: parseQueryNumber(parsed.startYear),
+      endYear: parseQueryNumber(parsed.endYear),
+      limit: limit !== null ? Math.max(1, Math.round(limit)) : 10
+    };
+  } catch {
+    return null;
+  }
+};
+
 const sidebarInitialSearch = computed(() => ({
   lat: searchLat.value,
   lng: searchLng.value,
+  latInput: searchLatInput.value,
+  lngInput: searchLngInput.value,
   radius: searchRadius.value,
   startYear: searchStartYear.value,
   endYear: searchEndYear.value,
@@ -66,6 +104,10 @@ onMounted(() => {
   const queryLng = parseQueryNumber(route.query.lng);
 
   if (queryLat === null || queryLng === null) {
+    const storedPayload = readPersistedSearchState();
+    if (storedPayload) {
+      handleSearch(storedPayload);
+    }
     return;
   }
 
@@ -73,16 +115,21 @@ onMounted(() => {
   const queryLimit = parseQueryNumber(route.query.limit);
   const queryStartYear = parseQueryNumber(route.query.start_year);
   const queryEndYear = parseQueryNumber(route.query.end_year);
+  const queryLatInput = typeof route.query.lat_input === 'string' ? route.query.lat_input : String(queryLat);
+  const queryLngInput = typeof route.query.lng_input === 'string' ? route.query.lng_input : String(queryLng);
 
   const payload: SearchParams = {
     lat: queryLat,
     lng: queryLng,
+    latInput: queryLatInput,
+    lngInput: queryLngInput,
     radius: queryRadius !== null ? Math.min(100, Math.max(1, Math.round(queryRadius))) : 20,
     startYear: queryStartYear,
     endYear: queryEndYear,
     limit: queryLimit !== null ? Math.max(1, Math.round(queryLimit)) : 10
   };
 
+  persistSearchState(payload);
   handleSearch(payload);
 });
 
@@ -91,9 +138,13 @@ onUnmounted(() => {
 });
 
 const handleSearch = async (payload: SearchParams) => {
+  persistSearchState(payload);
+
   hasSearched.value = true;
   searchLat.value = payload.lat;
   searchLng.value = payload.lng;
+  searchLatInput.value = payload.latInput ?? (payload.lat !== null ? String(payload.lat) : '');
+  searchLngInput.value = payload.lngInput ?? (payload.lng !== null ? String(payload.lng) : '');
   searchRadius.value = payload.radius;
   searchStartYear.value = payload.startYear;
   searchEndYear.value = payload.endYear;
@@ -145,6 +196,10 @@ const navigateToAnalysis = (station: Station) => {
 
   if (searchLat.value != null) query.lat = String(searchLat.value);
   if (searchLng.value != null) query.lng = String(searchLng.value);
+  if (searchLatInput.value.length > 0) query.lat_input = searchLatInput.value;
+  if (searchLngInput.value.length > 0) query.lng_input = searchLngInput.value;
+  if (searchStartYear.value != null) query.search_start_year = String(searchStartYear.value);
+  if (searchEndYear.value != null) query.search_end_year = String(searchEndYear.value);
 
   router.push({
     name: 'analyse',

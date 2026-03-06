@@ -111,6 +111,8 @@ const props = defineProps<{
   initialSearch?: {
     lat: number | null;
     lng: number | null;
+    latInput?: string;
+    lngInput?: string;
     radius: number | null;
     startYear: number | null;
     endYear: number | null;
@@ -130,8 +132,12 @@ const setLimit = (newLimit: number) => {
 const applyInitialSearch = () => {
   if (!props.initialSearch) return;
 
-  lat.value = props.initialSearch.lat !== null ? String(props.initialSearch.lat) : '';
-  lng.value = props.initialSearch.lng !== null ? String(props.initialSearch.lng) : '';
+  lat.value = typeof props.initialSearch.latInput === 'string'
+    ? props.initialSearch.latInput
+    : (props.initialSearch.lat !== null ? String(props.initialSearch.lat) : '');
+  lng.value = typeof props.initialSearch.lngInput === 'string'
+    ? props.initialSearch.lngInput
+    : (props.initialSearch.lng !== null ? String(props.initialSearch.lng) : '');
   radius.value = props.initialSearch.radius !== null ? clampRadius(props.initialSearch.radius) : 20;
   startYear.value = props.initialSearch.startYear;
   endYear.value = props.initialSearch.endYear;
@@ -221,6 +227,8 @@ const triggerSearch = () => {
   const paket = {
     lat: latValue,
     lng: lngValue,
+    latInput: lat.value.trim(),
+    lngInput: lng.value.trim(),
     radius: Number(radius.value),
     startYear: hasStart ? Number(startYear.value) : null,
     endYear: hasEnd ? Number(endYear.value) : null,
