@@ -160,7 +160,7 @@ const goBackToSearch = () => router.push({ name: 'search' });
           <h3>{{ currentStation.name }}</h3>
           <p class="station-id">#{{ currentStation.id }}</p>
           <div class="station-details">
-            <p>Entfernung: {{ currentStation.distanceKm }}km</p>
+            <p>Entfernung: {{ Number(currentStation.distanceKm).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }} km</p>
             <p>Zeitraum: {{ currentStation.period }}</p>
           </div>
         </div>

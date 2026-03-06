@@ -54,7 +54,7 @@ watch(() => props, () => {
 
   props.stations.forEach(station => {
     L.marker([station.lat, station.lon])
-      .bindPopup(`<b>${station.name || station.station_id}</b><br>Distanz: ${station.distance_km.toFixed(1)} km`)
+      .bindPopup(`<b>${station.name || station.station_id}</b><br>Distanz: ${station.distance_km.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`)
       .addTo(markersLayer);
   });
 
