@@ -220,7 +220,7 @@ const triggerSearch = () => {
 
         <div class="subheader-group">
     <div class="subheader-texts">
-      <h2>verfügbare Wetterstationen</h2>
+      <h2>verfügbare Stationen</h2>
       <p class="results-count">Anzahl der Ergebnisse: {{ resultsCount ?? '-' }}</p>
     </div>
     
