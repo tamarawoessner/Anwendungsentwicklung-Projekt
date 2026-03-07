@@ -11,6 +11,21 @@ const formatTemp = (val: number | null | undefined) => {
   return `${Number(val).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} °C`;
 };
 
+const buildYearRange = (data: any, fallbackYears: number[]) => {
+  const requestStart = Number(data?.request?.start_year);
+  const requestEnd = Number(data?.request?.end_year);
+
+  if (Number.isFinite(requestStart) && Number.isFinite(requestEnd) && requestStart <= requestEnd) {
+    return Array.from({ length: requestEnd - requestStart + 1 }, (_, i) => requestStart + i);
+  }
+
+  if (fallbackYears.length > 0) {
+    return [...fallbackYears].sort((a, b) => b - a);
+  }
+
+  return [];
+};
+
 const tableData = computed(() => {
   if (!props.data) return [];
   const rowsByYear: Record<number, any> = {};
@@ -42,6 +57,13 @@ const tableData = computed(() => {
       });
     });
   }
+
+  const existingYears = Object.keys(rowsByYear).map(Number).filter((year) => Number.isFinite(year));
+  const allYears = buildYearRange(props.data, existingYears);
+
+  allYears.forEach((year) => {
+    getRow(year);
+  });
 
   return Object.values(rowsByYear).sort((a: any, b: any) => b.year - a.year);
 });
