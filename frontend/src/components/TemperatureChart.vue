@@ -18,6 +18,21 @@ const getColor = (selection: string) => {
   return '#a78bfa';
 };
 
+const buildYearRange = (data: any, fallbackYears: number[]) => {
+  const requestStart = Number(data?.request?.start_year);
+  const requestEnd = Number(data?.request?.end_year);
+
+  if (Number.isFinite(requestStart) && Number.isFinite(requestEnd) && requestStart <= requestEnd) {
+    return Array.from({ length: requestEnd - requestStart + 1 }, (_, i) => requestStart + i);
+  }
+
+  if (fallbackYears.length > 0) {
+    return [...fallbackYears].sort((a, b) => a - b);
+  }
+
+  return [];
+};
+
 const buildChartData = () => {
   if (!props.data) return { labels: [], datasets: [] };
 
@@ -49,19 +64,18 @@ const buildChartData = () => {
     extractPoints(props.data.seasons.AUTUMN, 'Herbst Tmin', 'Herbst Tmax');
   }
 
-  const sortedLabels = Array.from(labels).sort((a, b) => a - b);
+  const sortedLabels = buildYearRange(props.data, Array.from(labels));
   const finalDatasets = [];
   
-  for (const [key, pointsByYear] of Object.entries(datasetMap)) {
-    if (props.selections.includes(key)) {
-      finalDatasets.push({
-        label: key,
-        data: sortedLabels.map((year) => pointsByYear.get(year) ?? null),
-        borderColor: getColor(key),
-        backgroundColor: getColor(key),
-        spanGaps: false 
-      });
-    }
+  for (const key of props.selections) {
+    const pointsByYear = datasetMap[key] ?? new Map<number, number>();
+    finalDatasets.push({
+      label: key,
+      data: sortedLabels.map((year) => pointsByYear.get(year) ?? null),
+      borderColor: getColor(key),
+      backgroundColor: getColor(key),
+      spanGaps: false
+    });
   }
 
   return { labels: sortedLabels, datasets: finalDatasets };
