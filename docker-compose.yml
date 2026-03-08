@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: app
       POSTGRES_USER: app
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
@@ -16,21 +16,62 @@ services:
       retries: 10
     ports:
       - "5432:5432"
+
   backend:
     image: ghcr.io/tamarawoessner/anwendungsentwicklung-projekt-backend:latest
     container_name: ghcn-backend
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      DATABASE_URL: ${DATABASE_URL}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://app:changeme@ghcn-db:5432/app}
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")'"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     ports:
       - "8000:8000"
     working_dir: /
     volumes:
-    - ./app:/app
+      - ./app:/app
     command: ["uvicorn", "app.main:app", "--host=0.0.0.0", "--port=8000", "--reload", "--reload-dir", "/app"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ghcn-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    command: >
+      /bin/sh -c "
+        echo '';
+        echo '  ===============================================';
+        echo '  GHCN Data View – Startup abgeschlossen';
+        echo '  ===============================================';
+        echo '';
+        echo '  Services:';
+        echo '    [✓] PostgreSQL  (ghcn-db)       :5432';
+        echo '    [✓] Backend API (ghcn-backend)   :8000';
+        echo '    [✓] Frontend    (ghcn-frontend)  :3000';
+        echo '';
+        echo '  Zugriff:';
+        echo '    Frontend:   http://localhost:3000';
+        echo '    Backend:    http://localhost:8000';
+        echo '    API-Docs:   http://localhost:8000/docs';
+        echo '';
+        echo '  Hinweise:';
+        echo '    Logs:       docker compose logs -f';
+        echo '    Stoppen:    docker compose down';
+        echo '  ===============================================';
+        echo '';
+        nginx -g 'daemon off;'
+      "
 
 volumes:
   pgdata:

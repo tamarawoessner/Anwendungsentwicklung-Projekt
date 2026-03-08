@@ -160,7 +160,7 @@ const handleSearch = async (payload: SearchParams) => {
   };
 
   try {
-    const response = await fetch('http://localhost:8000/stations/search', {
+    const response = await fetch('/stations/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(apiPayload)
