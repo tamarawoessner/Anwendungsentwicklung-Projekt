@@ -6,7 +6,7 @@ git clone https://github.com/tamarawoessner/Anwendungsentwicklung-Projekt/
 
 2) Anwendung bauen
 docker compose pull
-docker compose --build -d
+docker compose up --build -d
 Diese Befehle laden die Docker Container-Images und starten sowohl die Front- als auch die Backend Container.
 
 3) Prüfen ob alles läuft:
