@@ -619,6 +619,8 @@ h2{
   font-size: 0.95rem;
   color: #f8fafc;
   font-weight: 500;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .subheader-group {
