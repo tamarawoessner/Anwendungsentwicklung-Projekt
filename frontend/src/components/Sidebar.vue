@@ -211,6 +211,13 @@ const triggerSearch = () => {
       return;
     }
 
+    const maxEndYear = new Date().getFullYear() - 1;
+    if (hasEnd && eYear > maxEndYear) {
+      endYearError.value = true;
+      formError.value = `Das Endjahr darf nicht größer als ${maxEndYear} sein.`;
+      return;
+    }
+
     if (hasStart && hasEnd && sYear > eYear) {
       startYearError.value = true;
       endYearError.value = true;
