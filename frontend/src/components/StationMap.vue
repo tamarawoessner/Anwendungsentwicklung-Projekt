@@ -31,7 +31,7 @@ const updateMarkers = () => {
 
   markersLayer.clearLayers();
 
-  if (props.centerLat && props.centerLng) {
+  if (props.centerLat != null && props.centerLng != null) {
     L.circleMarker([props.centerLat, props.centerLng], {
       color: '#ef4444',     
       fillColor: '#ef4444',
