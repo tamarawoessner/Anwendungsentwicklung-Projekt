@@ -25,6 +25,18 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).status == 200 else 1)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
     ports:
       - "8000:8000"
     working_dir: /
@@ -36,7 +48,8 @@ services:
     image: ghcr.io/tamarawoessner/anwendungsentwicklung-projekt-frontend:latest
     container_name: ghcn-frontend
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "3000:80"
 
