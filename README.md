@@ -4,13 +4,13 @@ Setup:
 1) Projekt klonen und ins Verzeichnis wechseln
 git clone https://github.com/tamarawoessner/Anwendungsentwicklung-Projekt/
 
-3) Umgebungsdatei anlegen
-Erstelle eine .env auf Basis von .env.example und ändere das Passwort
+2) Anwendung bauen
+docker compose pull
+docker compose up --build -d
+Diese Befehle laden die Docker Container-Images und starten sowohl die Front- als auch die Backend Container.
 
-4) Backend starten
-  docker compose pull
-  docker compose up -d
+3) Prüfen ob alles läuft:
+Aktive Docker Container anzeigen unter docker compose ps
 
-5) Prüfen ob alles läuft:
-Aktive Docker Container anzeigen: docker compose ps
+Frontend: http://localhost:3000
 API-Doku: http://localhost:8000/docs

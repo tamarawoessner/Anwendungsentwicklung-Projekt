@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: app
       POSTGRES_USER: app
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
@@ -20,8 +20,8 @@ services:
     image: ghcr.io/tamarawoessner/anwendungsentwicklung-projekt-backend:latest
     container_name: ghcn-backend
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      DATABASE_URL: ${DATABASE_URL}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://app:changeme@db:5432/app}
     depends_on:
       db:
         condition: service_healthy
@@ -31,6 +31,16 @@ services:
     volumes:
     - ./app:/app
     command: ["uvicorn", "app.main:app", "--host=0.0.0.0", "--port=8000", "--reload", "--reload-dir", "/app"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ghcn-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
 
 volumes:
   pgdata:
