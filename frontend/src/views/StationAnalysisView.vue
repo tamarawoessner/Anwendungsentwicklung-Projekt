@@ -136,7 +136,7 @@ const fetchStationData = async () => {
   const payload = buildRequestPayload();
 
   try {
-    const url = `http://localhost:8000/stations/${currentStation.value.id}/data?start_year=${startYearInput.value}&end_year=${endYearInput.value}`;
+    const url = `/api/stations/${currentStation.value.id}/data?start_year=${startYearInput.value}&end_year=${endYearInput.value}`;
     
     const res = await fetch(url, {
       method: 'POST',

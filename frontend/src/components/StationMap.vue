@@ -3,7 +3,17 @@ import { onMounted, ref, watch } from 'vue';
 import type { Station } from '../types';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css'; 
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
+// Fix Leaflet default icon paths for Vite bundler
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 const props = defineProps<{
   stations: Station[];
@@ -16,17 +26,7 @@ const mapContainer = ref<HTMLElement | null>(null);
 let map: L.Map | null = null;
 let markersLayer = L.featureGroup();
 
-onMounted(() => {
-
-  if (!mapContainer.value) return;
-  map = L.map(mapContainer.value).setView([51.1657, 10.4515], 6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
-  markersLayer.addTo(map);
-});
-
-watch(() => props, () => {
+const updateMarkers = () => {
   if (!map) return;
 
   markersLayer.clearLayers();
@@ -61,7 +61,25 @@ watch(() => props, () => {
   if (markersLayer.getLayers().length > 0 && map) {
     map.fitBounds(markersLayer.getBounds(), { padding: [50, 50] });
   }
-}, { deep: true });
+};
+
+onMounted(() => {
+
+  if (!mapContainer.value) return;
+  map = L.map(mapContainer.value).setView([51.1657, 10.4515], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+  markersLayer.addTo(map);
+
+  updateMarkers();
+});
+
+watch(
+  () => [props.stations, props.centerLat, props.centerLng, props.radiusKm],
+  updateMarkers,
+  { deep: true }
+);
 </script>
 
 <template>
