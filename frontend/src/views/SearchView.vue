@@ -176,6 +176,7 @@ const handleSearch = async (payload: SearchParams) => {
     console.log(`BÄM! ${data.count} Stationen gefunden:`, stations.value);
 
   } catch (error) {
+    stations.value = [];
     resultsCount.value = null;
     console.error("Ohje, da ging was schief beim Abrufen:", error);
   }
@@ -235,7 +236,10 @@ const navigateToAnalysis = (station: Station) => {
         <div class="nearby-header" v-if="cardsToDisplay > 0">
           <h2>Stationen in der Nähe</h2>
         </div>
-          <div v-if="hasSearched && stations.length === 0" class="no-results">
+          <div v-if="!hasSearched" class="no-results">
+            <span>Warten auf Suche...</span>
+          </div>
+          <div v-else-if="hasSearched && stations.length === 0" class="no-results">
             <span>Die Suche ergab keine Treffer. Versuche einen größeren Radius oder andere Kriterien.</span>
           </div>
           <div v-else-if="cardsToDisplay > 0" class="nearby-wrapper">
