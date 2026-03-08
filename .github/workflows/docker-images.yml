@@ -32,3 +32,11 @@ jobs:
           file: ./app/Dockerfile
           push: true
           tags: ghcr.io/tamarawoessner/anwendungsentwicklung-projekt-backend:latest
+
+      - name: Build Docker image and push (frontend)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ghcr.io/tamarawoessner/anwendungsentwicklung-projekt-frontend:latest

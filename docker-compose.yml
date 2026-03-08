@@ -33,9 +33,7 @@ services:
     command: ["uvicorn", "app.main:app", "--host=0.0.0.0", "--port=8000", "--reload", "--reload-dir", "/app"]
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/tamarawoessner/anwendungsentwicklung-projekt-frontend:latest
     container_name: ghcn-frontend
     depends_on:
       - backend
