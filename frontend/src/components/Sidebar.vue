@@ -292,6 +292,7 @@ const triggerSearch = () => {
               type="number"
               v-model="radius"
               class="slider-value"
+              aria-label="Radius in Kilometern"
               min="1"
               max="100"
               @keydown="blockInvalidRadiusChars"
