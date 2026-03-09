@@ -61,13 +61,13 @@ def meteorological_season_and_year(
     dt: date, southern_hemisphere: bool = False
 ) -> tuple[str, int]:
     # Meteorological seasons by date boundaries.
-    # For season-year buckets, Dec belongs to the next year's cross-year season
-    # (WINTER on north, SUMMER on south).
+    # For season-year buckets, Jan/Feb belong to the previous year's
+    # cross-year season (WINTER on north, SUMMER on south).
     m = dt.month
 
     if southern_hemisphere:
         if m in (12, 1, 2):
-            return "SUMMER", (dt.year + 1 if m == 12 else dt.year)
+            return "SUMMER", (dt.year - 1 if m in (1, 2) else dt.year)
         if m in (3, 4, 5):
             return "AUTUMN", dt.year
         if m in (6, 7, 8):
@@ -80,7 +80,7 @@ def meteorological_season_and_year(
         return "SUMMER", dt.year
     if m in (9, 10, 11):
         return "AUTUMN", dt.year
-    return "WINTER", (dt.year + 1 if m == 12 else dt.year)  # 12, 1, 2
+    return "WINTER", (dt.year - 1 if m in (1, 2) else dt.year)  # 12, 1, 2
 
 
 def expected_days_season(
@@ -90,13 +90,13 @@ def expected_days_season(
     # SPRING: Mar-May (season_year)
     # SUMMER: Jun-Aug (season_year)
     # AUTUMN: Sep-Nov (season_year)
-    # WINTER: Dec(prev) + Jan-Feb(current) where current = season_year
+    # WINTER: Dec(current) + Jan-Feb(next) where current = season_year
     if southern_hemisphere:
         # meteorological seasons on the southern hemisphere:
-        # SUMMER: Dec(prev)-Feb(current), AUTUMN: Mar-May,
+        # SUMMER: Dec(current)-Feb(next), AUTUMN: Mar-May,
         # WINTER: Jun-Aug, SPRING: Sep-Nov
         if season == "SUMMER":
-            months = [(season_year - 1, 12), (season_year, 1), (season_year, 2)]
+            months = [(season_year, 12), (season_year + 1, 1), (season_year + 1, 2)]
         elif season == "AUTUMN":
             months = [(season_year, 3), (season_year, 4), (season_year, 5)]
         elif season == "WINTER":
@@ -111,9 +111,20 @@ def expected_days_season(
         elif season == "AUTUMN":
             months = [(season_year, 9), (season_year, 10), (season_year, 11)]
         else:  # WINTER
-            months = [(season_year - 1, 12), (season_year, 1), (season_year, 2)]
+            months = [(season_year, 12), (season_year + 1, 1), (season_year + 1, 2)]
 
     return sum(calendar.monthrange(y, m)[1] for y, m in months)
+
+
+def mean_of_monthly_means(months_acc: dict) -> float | None:
+    monthly_means = []
+    for month_acc in months_acc.values():
+        cnt = month_acc["cnt"]
+        if cnt:
+            monthly_means.append(month_acc["sum"] / cnt)
+    if not monthly_means:
+        return None
+    return sum(monthly_means) / len(monthly_means)
 
 
 def _clean_env(value: str | None) -> str | None:
@@ -186,8 +197,10 @@ def main():
 
             for path in files:
                 # per-file accumulators (bounded memory)
-                year_acc = {}  # (sid, year) -> sums/cnts
-                season_acc = {}  # (sid, season_year, season) -> sums/cnts
+                year_acc = {}  # (sid, year) -> day-counts + monthly buckets
+                season_acc = (
+                    {}
+                )  # (sid, season_year, season) -> day-counts + monthly buckets
 
                 with open(path, "r", encoding="utf-8", errors="replace") as f:
                     for line in f:
@@ -217,10 +230,10 @@ def main():
                         yb = year_acc.setdefault(
                             ykey,
                             {
-                                "TMIN_sum": 0.0,
-                                "TMIN_cnt": 0,
-                                "TMAX_sum": 0.0,
-                                "TMAX_cnt": 0,
+                                "TMIN_days_present": 0,
+                                "TMAX_days_present": 0,
+                                "TMIN_months": {},
+                                "TMAX_months": {},
                             },
                         )
 
@@ -235,11 +248,19 @@ def main():
 
                             # year aggregation (calendar year)
                             if element == "TMIN":
-                                yb["TMIN_sum"] += v_c
-                                yb["TMIN_cnt"] += 1
+                                yb["TMIN_days_present"] += 1
+                                yb_m = yb["TMIN_months"].setdefault(
+                                    month, {"sum": 0.0, "cnt": 0}
+                                )
+                                yb_m["sum"] += v_c
+                                yb_m["cnt"] += 1
                             else:
-                                yb["TMAX_sum"] += v_c
-                                yb["TMAX_cnt"] += 1
+                                yb["TMAX_days_present"] += 1
+                                yb_m = yb["TMAX_months"].setdefault(
+                                    month, {"sum": 0.0, "cnt": 0}
+                                )
+                                yb_m["sum"] += v_c
+                                yb_m["cnt"] += 1
 
                             # season aggregation (meteorological, by date)
                             dt = date(year, month, d)
@@ -250,39 +271,43 @@ def main():
                             sb = season_acc.setdefault(
                                 skey,
                                 {
-                                    "TMIN_sum": 0.0,
-                                    "TMIN_cnt": 0,
-                                    "TMAX_sum": 0.0,
-                                    "TMAX_cnt": 0,
+                                    "TMIN_days_present": 0,
+                                    "TMAX_days_present": 0,
+                                    "TMIN_months": {},
+                                    "TMAX_months": {},
                                 },
                             )
 
                             if element == "TMIN":
-                                sb["TMIN_sum"] += v_c
-                                sb["TMIN_cnt"] += 1
+                                sb["TMIN_days_present"] += 1
+                                sb_m = sb["TMIN_months"].setdefault(
+                                    (year, month), {"sum": 0.0, "cnt": 0}
+                                )
+                                sb_m["sum"] += v_c
+                                sb_m["cnt"] += 1
                             else:
-                                sb["TMAX_sum"] += v_c
-                                sb["TMAX_cnt"] += 1
+                                sb["TMAX_days_present"] += 1
+                                sb_m = sb["TMAX_months"].setdefault(
+                                    (year, month), {"sum": 0.0, "cnt": 0}
+                                )
+                                sb_m["sum"] += v_c
+                                sb_m["cnt"] += 1
 
                 # write file results
                 year_rows = []
                 for (sid, yr), acc in year_acc.items():
                     exp = expected_days_year(yr)
-                    tmin_mean = (
-                        (acc["TMIN_sum"] / acc["TMIN_cnt"]) if acc["TMIN_cnt"] else None
-                    )
-                    tmax_mean = (
-                        (acc["TMAX_sum"] / acc["TMAX_cnt"]) if acc["TMAX_cnt"] else None
-                    )
+                    tmin_mean = mean_of_monthly_means(acc["TMIN_months"])
+                    tmax_mean = mean_of_monthly_means(acc["TMAX_months"])
                     year_rows.append(
                         (
                             sid,
                             yr,
                             tmin_mean,
                             tmax_mean,
-                            acc["TMIN_cnt"],
+                            acc["TMIN_days_present"],
                             exp,
-                            acc["TMAX_cnt"],
+                            acc["TMAX_days_present"],
                             exp,
                         )
                     )
@@ -295,12 +320,8 @@ def main():
                     exp = expected_days_season(
                         sy, season, southern_hemisphere=is_southern
                     )
-                    tmin_mean = (
-                        (acc["TMIN_sum"] / acc["TMIN_cnt"]) if acc["TMIN_cnt"] else None
-                    )
-                    tmax_mean = (
-                        (acc["TMAX_sum"] / acc["TMAX_cnt"]) if acc["TMAX_cnt"] else None
-                    )
+                    tmin_mean = mean_of_monthly_means(acc["TMIN_months"])
+                    tmax_mean = mean_of_monthly_means(acc["TMAX_months"])
                     season_rows.append(
                         (
                             sid,
@@ -308,9 +329,9 @@ def main():
                             season,
                             tmin_mean,
                             tmax_mean,
-                            acc["TMIN_cnt"],
+                            acc["TMIN_days_present"],
                             exp,
-                            acc["TMAX_cnt"],
+                            acc["TMAX_days_present"],
                             exp,
                         )
                     )
