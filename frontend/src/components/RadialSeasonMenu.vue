@@ -1,28 +1,48 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
 const props = defineProps<{
   activeSelections: string[]
 }>();
 
 const emit = defineEmits(['selection-changed']);
 
+const relations: Record<string, string[]> = {
+  'Ganzes Jahr': ['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax'],
+  'Winter': ['Winter Tmin', 'Winter Tmax'],
+  'Frühling': ['Frühling Tmin', 'Frühling Tmax'],
+  'Sommer': ['Sommer Tmin', 'Sommer Tmax'],
+  'Herbst': ['Herbst Tmin', 'Herbst Tmax']
+};
+
+const hoveredOuter = ref<string | null>(null);
+
 const select = (bereich: string) => {
   emit('selection-changed', bereich);
 }
 
 const isActive = (bereich: string) => {
-  const relations: Record<string, string[]> = {
-    'Ganzes Jahr': ['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax'],
-    'Winter': ['Winter Tmin', 'Winter Tmax'],
-    'Frühling': ['Frühling Tmin', 'Frühling Tmax'],
-    'Sommer': ['Sommer Tmin', 'Sommer Tmax'],
-    'Herbst': ['Herbst Tmin', 'Herbst Tmax']
-  };
-
   if (relations[bereich]) {
     return relations[bereich].some(s => props.activeSelections.includes(s));
   }
 
   return props.activeSelections.includes(bereich);
+};
+
+const setOuterHover = (bereich: string | null) => {
+  hoveredOuter.value = bereich;
+};
+
+const isHoverLinked = (bereich: string) => {
+  if (!hoveredOuter.value) return false;
+  const linkedGroup = relations[hoveredOuter.value];
+  if (!linkedGroup?.includes(bereich)) return false;
+
+  // Only preview linked inner slices when the hovered group is fully inactive.
+  // If one inner slice is already active and the other was disabled by the user,
+  // the disabled one should stay gray.
+  const hasActiveInGroup = linkedGroup.some(s => props.activeSelections.includes(s));
+  return !hasActiveInGroup;
 };
 </script>
 
@@ -49,19 +69,21 @@ const isActive = (bereich: string) => {
         </defs>
 
         <g mask="url(#cutout_gaps1)">
-          <path d="M 100 100 L 29.29 29.29 A 100 100 0 0 1 170.71 29.29 Z" fill="#22d3ee" class="wheel-slice" :class="{ 'active': isActive('Winter') }" @click="select('Winter')" />
-          <path d="M 100 100 L 170.71 29.29 A 100 100 0 0 1 170.71 170.71 Z" fill="#4ade80" class="wheel-slice" :class="{ 'active': isActive('Frühling') }" @click="select('Frühling')" />
-          <path d="M 100 100 L 170.71 170.71 A 100 100 0 0 1 29.29 170.71 Z" fill="#fbbf24" class="wheel-slice" :class="{ 'active': isActive('Sommer') }" @click="select('Sommer')" />
-          <path d="M 100 100 L 29.29 170.71 A 100 100 0 0 1 29.29 29.29 Z" fill="#fb923c" class="wheel-slice" :class="{ 'active': isActive('Herbst') }" @click="select('Herbst')" />
+          <path d="M 100 100 L 29.29 29.29 A 100 100 0 0 1 170.71 29.29 Z" fill="#22d3ee" class="wheel-slice outer-slice" :class="{ 'active': isActive('Winter') }" @click="select('Winter')" @mouseenter="setOuterHover('Winter')" @mouseleave="setOuterHover(null)" />
+          <path d="M 100 100 L 170.71 29.29 A 100 100 0 0 1 170.71 170.71 Z" fill="#4ade80" class="wheel-slice outer-slice" :class="{ 'active': isActive('Frühling') }" @click="select('Frühling')" @mouseenter="setOuterHover('Frühling')" @mouseleave="setOuterHover(null)" />
+          <path d="M 100 100 L 170.71 170.71 A 100 100 0 0 1 29.29 170.71 Z" fill="#fbbf24" class="wheel-slice outer-slice" :class="{ 'active': isActive('Sommer') }" @click="select('Sommer')" @mouseenter="setOuterHover('Sommer')" @mouseleave="setOuterHover(null)" />
+          <path d="M 100 100 L 29.29 170.71 A 100 100 0 0 1 29.29 29.29 Z" fill="#fb923c" class="wheel-slice outer-slice" :class="{ 'active': isActive('Herbst') }" @click="select('Herbst')" @mouseenter="setOuterHover('Herbst')" @mouseleave="setOuterHover(null)" />
 
-          <path d="M 100 100 L 56.16 56.16 A 62 62 0 0 1 100 38 Z" fill="#38bdf8" class="wheel-slice" :class="{ 'active': isActive('Winter Tmin') }" @click="select('Winter Tmin')" />
-          <path d="M 100 100 L 100 38 A 62 62 0 0 1 143.84 56.16 Z" fill="#f87171" class="wheel-slice" :class="{ 'active': isActive('Winter Tmax') }" @click="select('Winter Tmax')" />
-          <path d="M 100 100 L 143.84 56.16 A 62 62 0 0 1 162 100 Z" fill="#38bdf8" class="wheel-slice" :class="{ 'active': isActive('Frühling Tmin') }" @click="select('Frühling Tmin')" />
-          <path d="M 100 100 L 162 100 A 62 62 0 0 1 143.84 143.84 Z" fill="#f87171" class="wheel-slice" :class="{ 'active': isActive('Frühling Tmax') }" @click="select('Frühling Tmax')" />
-          <path d="M 100 100 L 143.84 143.84 A 62 62 0 0 1 100 162 Z" fill="#38bdf8" class="wheel-slice" :class="{ 'active': isActive('Sommer Tmin') }" @click="select('Sommer Tmin')" />
-          <path d="M 100 100 L 100 162 A 62 62 0 0 1 56.16 143.84 Z" fill="#f87171" class="wheel-slice" :class="{ 'active': isActive('Sommer Tmax') }" @click="select('Sommer Tmax')" />
-          <path d="M 100 100 L 56.16 143.84 A 62 62 0 0 1 38 100 Z" fill="#38bdf8" class="wheel-slice" :class="{ 'active': isActive('Herbst Tmin') }" @click="select('Herbst Tmin')" />
-          <path d="M 100 100 L 38 100 A 62 62 0 0 1 56.16 56.16 Z" fill="#f87171" class="wheel-slice" :class="{ 'active': isActive('Herbst Tmax') }" @click="select('Herbst Tmax')" />
+          <circle cx="100" cy="100" r="62" class="inner-underlay" />
+
+          <path d="M 100 100 L 56.16 56.16 A 62 62 0 0 1 100 38 Z" fill="#38bdf8" class="wheel-slice inner-slice" :class="{ 'active': isActive('Winter Tmin'), 'linked-hover': !isActive('Winter Tmin') && isHoverLinked('Winter Tmin') }" @click="select('Winter Tmin')" />
+          <path d="M 100 100 L 100 38 A 62 62 0 0 1 143.84 56.16 Z" fill="#f87171" class="wheel-slice inner-slice" :class="{ 'active': isActive('Winter Tmax'), 'linked-hover': !isActive('Winter Tmax') && isHoverLinked('Winter Tmax') }" @click="select('Winter Tmax')" />
+          <path d="M 100 100 L 143.84 56.16 A 62 62 0 0 1 162 100 Z" fill="#38bdf8" class="wheel-slice inner-slice" :class="{ 'active': isActive('Frühling Tmin'), 'linked-hover': !isActive('Frühling Tmin') && isHoverLinked('Frühling Tmin') }" @click="select('Frühling Tmin')" />
+          <path d="M 100 100 L 162 100 A 62 62 0 0 1 143.84 143.84 Z" fill="#f87171" class="wheel-slice inner-slice" :class="{ 'active': isActive('Frühling Tmax'), 'linked-hover': !isActive('Frühling Tmax') && isHoverLinked('Frühling Tmax') }" @click="select('Frühling Tmax')" />
+          <path d="M 100 100 L 143.84 143.84 A 62 62 0 0 1 100 162 Z" fill="#38bdf8" class="wheel-slice inner-slice" :class="{ 'active': isActive('Sommer Tmin'), 'linked-hover': !isActive('Sommer Tmin') && isHoverLinked('Sommer Tmin') }" @click="select('Sommer Tmin')" />
+          <path d="M 100 100 L 100 162 A 62 62 0 0 1 56.16 143.84 Z" fill="#f87171" class="wheel-slice inner-slice" :class="{ 'active': isActive('Sommer Tmax'), 'linked-hover': !isActive('Sommer Tmax') && isHoverLinked('Sommer Tmax') }" @click="select('Sommer Tmax')" />
+          <path d="M 100 100 L 56.16 143.84 A 62 62 0 0 1 38 100 Z" fill="#38bdf8" class="wheel-slice inner-slice" :class="{ 'active': isActive('Herbst Tmin'), 'linked-hover': !isActive('Herbst Tmin') && isHoverLinked('Herbst Tmin') }" @click="select('Herbst Tmin')" />
+          <path d="M 100 100 L 38 100 A 62 62 0 0 1 56.16 56.16 Z" fill="#f87171" class="wheel-slice inner-slice" :class="{ 'active': isActive('Herbst Tmax'), 'linked-hover': !isActive('Herbst Tmax') && isHoverLinked('Herbst Tmax') }" @click="select('Herbst Tmax')" />
         </g>
 
         <g class="wheel-text-group" fill="#ffffff" font-size="16" font-weight="bold" text-anchor="middle">
@@ -85,9 +107,10 @@ const isActive = (bereich: string) => {
         </defs>
 
         <g mask="url(#cutout_gaps2)">
-          <circle cx="100" cy="100" r="100" fill="#a78bfa" class="wheel-slice" :class="{ 'active': isActive('Ganzes Jahr') }" @click="select('Ganzes Jahr')" />
-          <path d="M 38 100 A 62 62 0 0 1 162 100 Z" fill="#38bdf8" class="wheel-slice" :class="{ 'active': isActive('Ganzes Jahr Tmin') }" @click="select('Ganzes Jahr Tmin')" />
-          <path d="M 162 100 A 62 62 0 0 1 38 100 Z" fill="#f87171" class="wheel-slice" :class="{ 'active': isActive('Ganzes Jahr Tmax') }" @click="select('Ganzes Jahr Tmax')" />
+          <circle cx="100" cy="100" r="100" fill="#a78bfa" class="wheel-slice outer-slice" :class="{ 'active': isActive('Ganzes Jahr') }" @click="select('Ganzes Jahr')" @mouseenter="setOuterHover('Ganzes Jahr')" @mouseleave="setOuterHover(null)" />
+          <circle cx="100" cy="100" r="62" class="inner-underlay" />
+          <path d="M 38 100 A 62 62 0 0 1 162 100 Z" fill="#38bdf8" class="wheel-slice inner-slice" :class="{ 'active': isActive('Ganzes Jahr Tmin'), 'linked-hover': !isActive('Ganzes Jahr Tmin') && isHoverLinked('Ganzes Jahr Tmin') }" @click="select('Ganzes Jahr Tmin')" />
+          <path d="M 162 100 A 62 62 0 0 1 38 100 Z" fill="#f87171" class="wheel-slice inner-slice" :class="{ 'active': isActive('Ganzes Jahr Tmax'), 'linked-hover': !isActive('Ganzes Jahr Tmax') && isHoverLinked('Ganzes Jahr Tmax') }" @click="select('Ganzes Jahr Tmax')" />
         </g>
 
         <g class="wheel-text-group" fill="#ffffff" font-size="20" font-weight="bold" text-anchor="middle">
@@ -128,11 +151,21 @@ const isActive = (bereich: string) => {
   transition: opacity 0.3s ease;
 }
 
+.inner-underlay {
+  fill: #0f172a;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .wheel-slice.active {
   opacity: 1; 
 }
 
-.wheel-slice:hover {
+.inner-slice.linked-hover {
+  opacity: 0.7;
+}
+
+.wheel-slice:not(.active):hover {
   opacity: 0.8; 
 }
 
