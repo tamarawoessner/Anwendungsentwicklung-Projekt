@@ -217,18 +217,20 @@ const goBackToSearch = () => {
 
             <div class="year-selector-compact">
               <div class="compact-input-group">
-                <label>Startjahr</label>
+                <label for="analysis-start-year">Startjahr</label>
                 <input 
                   type="number" 
+                  id="analysis-start-year"
                   v-model="startYearInput" 
                   class="dark-input compact-year-field"
                   :class="{ 'input-error': dateError }"
                 >
               </div>
               <div class="compact-input-group">
-                <label>Endjahr</label>
+                <label for="analysis-end-year">Endjahr</label>
                 <input 
                   type="number" 
+                  id="analysis-end-year"
                   v-model="endYearInput" 
                   class="dark-input compact-year-field"
                   :class="{ 'input-error': dateError }"

@@ -173,12 +173,10 @@ const handleSearch = async (payload: SearchParams) => {
     stations.value = data.stations; 
     resultsCount.value = Number.isFinite(data.count) ? data.count : data.stations.length;
 
-    console.log(`BÄM! ${data.count} Stationen gefunden:`, stations.value);
-
   } catch (error) {
     stations.value = [];
     resultsCount.value = null;
-    console.error("Ohje, da ging was schief beim Abrufen:", error);
+    console.error("Fehler beim Abrufen der Daten.", error);
   }
 };
 
