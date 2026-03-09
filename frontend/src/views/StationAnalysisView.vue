@@ -57,7 +57,7 @@ const toggleSelection = (bereich: string) => {
     const subSelections = relations[bereich];
     const allPresent = subSelections.every(s => activeSelections.value.includes(s));
     if (allPresent) {
-      activeSelections.value = activeSelections.value.filter(s => !subSelections.includes(s));
+      activeSelections.value = activeSelections.value.filter((s: string) => !subSelections.includes(s));
     } else {
       subSelections.forEach(s => {
         if (!activeSelections.value.includes(s)) activeSelections.value.push(s);

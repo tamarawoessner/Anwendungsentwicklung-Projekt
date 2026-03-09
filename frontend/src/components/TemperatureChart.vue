@@ -12,9 +12,28 @@ const emit = defineEmits(['toggle-selection']);
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
 let myChart: Chart | null = null;
 
+const SEASON_COLORS: Record<string, { tmin: string; tmax: string }> = {
+  'Ganzes Jahr': { tmin: '#c4b5fd', tmax: '#7c3aed' },
+  Winter: { tmin: '#67e8f9', tmax: '#0891b2' },
+  Frühling: { tmin: '#86efac', tmax: '#16a34a' },
+  Sommer: { tmin: '#fde68a', tmax: '#ca8a04' },
+  Herbst: { tmin: '#fdba74', tmax: '#ea580c' }
+};
+
+const FALLBACK_COLORS = { tmin: '#93c5fd', tmax: '#ef4444' };
+
+const getSeasonFromSelection = (selection: string) => {
+  const parts = selection.split(' ');
+  if (parts.length < 2) return 'Ganzes Jahr';
+  return parts.slice(0, -1).join(' ');
+};
+
 const getColor = (selection: string) => {
-  if (selection.includes('Tmin')) return '#38bdf8';
-  if (selection.includes('Tmax')) return '#f87171';
+  const season = getSeasonFromSelection(selection);
+  const palette = SEASON_COLORS[season] ?? FALLBACK_COLORS;
+
+  if (selection.includes('Tmin')) return palette.tmin;
+  if (selection.includes('Tmax')) return palette.tmax;
   return '#a78bfa';
 };
 

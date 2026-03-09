@@ -78,7 +78,7 @@ const getValue = (row: any, sel: string) => {
     <table class="details-table">
       <thead>
         <tr>
-          <th>Jahr</th>
+          <th class="year-header">Jahr</th>
           <th v-for="sel in selections" :key="sel">
             {{ sel }} 
           </th>
@@ -92,7 +92,7 @@ const getValue = (row: any, sel: string) => {
         </tr>
         
         <tr v-else v-for="row in tableData" :key="row.year">
-          <td>{{ row.year }}</td>
+          <td class="year-cell">{{ row.year }}</td>
           
           <td v-for="sel in selections" :key="sel">
             {{ getValue(row, sel) }}
@@ -139,9 +139,21 @@ thead th {
   z-index: 1;
 }
 
+.year-header {
+  left: 0;
+  z-index: 3;
+}
+
 tbody td {
   padding: 0.25rem 0.75rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.year-cell {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background-color: #0f172a;
 }
 
 .table-container::-webkit-scrollbar { 
