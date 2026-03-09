@@ -249,7 +249,7 @@ const triggerSearch = () => {
     <aside class="sidebar">
         <div class="header-group">
             <h1>Wetterdaten</h1>
-            <img src="../assets/cloudy.png" alt="Emoji mit Wolken und Sonne" class="header-picture">
+            <img src="../assets/cloudy.png" alt="Emoji mit Wolken und Sonne" class="header-picture" width="40" height="40">
         </div>
 
 
@@ -325,7 +325,7 @@ const triggerSearch = () => {
     </div>
     
     <div class="filter-wrapper" ref="filterWrapperRef">
-        <img src="../assets/filter.png" alt="Filter-Icon" @click="isFilterMenuOpen = !isFilterMenuOpen">
+        <img src="../assets/filter.png" alt="Filter-Icon" width="22" height="22" @click="isFilterMenuOpen = !isFilterMenuOpen">
 
         <div class="filter-dropdown" v-if="isFilterMenuOpen">
             <div class="dropdown-header">
