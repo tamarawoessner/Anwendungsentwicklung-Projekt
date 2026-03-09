@@ -4,6 +4,7 @@ __pycache__/
 raw_data/
 .venv
 .coverage
+/db/docs/
 
 # Frontend misc
 frontend/node_modules/
