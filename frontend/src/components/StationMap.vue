@@ -27,7 +27,7 @@ let map: L.Map | null = null;
 let markersLayer = L.featureGroup();
 
 const updateMarkers = () => {
-  if (!map) return;
+  if (!map) return false;
 
   markersLayer.clearLayers();
 
@@ -61,18 +61,34 @@ const updateMarkers = () => {
   if (markersLayer.getLayers().length > 0 && map) {
     map.fitBounds(markersLayer.getBounds(), { padding: [50, 50] });
   }
+
+  return true;
 };
 
-onMounted(() => {
-
-  if (!mapContainer.value) return;
-  map = L.map(mapContainer.value).setView([51.1657, 10.4515], 6);
+const initializeMap = (container: HTMLElement | null = mapContainer.value) => {
+  if (!container) return false;
+  map = L.map(container).setView([51.1657, 10.4515], 6);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
   markersLayer.addTo(map);
 
   updateMarkers();
+  return true;
+};
+
+onMounted(() => {
+  initializeMap();
+});
+
+defineExpose({
+  __test__: {
+    updateMarkers,
+    initializeMap,
+    setMap: (nextMap: L.Map | null) => {
+      map = nextMap;
+    }
+  }
 });
 
 watch(

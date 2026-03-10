@@ -3,6 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import StationMap from '../src/components/StationMap.vue';
 import L from 'leaflet';
 
+let mockLayerEntries: unknown[] = ['mock-layer'];
+const mockMapInstance = {
+  setView: vi.fn().mockReturnThis(),
+  fitBounds: vi.fn().mockReturnThis(),
+};
+
 // --- LEAFLET MOCKING ---
 // Wir fälschen die gesamte Leaflet-Bibliothek, damit sie im Test nicht crasht
 vi.mock('leaflet', () => {
@@ -14,14 +20,8 @@ vi.mock('leaflet', () => {
   const mockFeatureGroup = {
     clearLayers: vi.fn().mockReturnThis(),
     addTo: vi.fn().mockReturnThis(),
-    // Wir tun so, als wäre ein Layer drin, damit map.fitBounds am Ende ausgeführt wird
-    getLayers: vi.fn().mockReturnValue(['mock-layer']), 
+    getLayers: vi.fn(() => mockLayerEntries),
     getBounds: vi.fn().mockReturnValue('mock-bounds'),
-  };
-  
-  const mockMapInstance = {
-    setView: vi.fn().mockReturnThis(),
-    fitBounds: vi.fn().mockReturnThis(),
   };
 
   return {
@@ -46,6 +46,7 @@ describe('StationMap.vue', () => {
   beforeEach(() => {
     // Vor jedem Test setzen wir unsere Zähler zurück
     vi.clearAllMocks();
+    mockLayerEntries = ['mock-layer'];
   });
 
   it('sollte die Karte initialisieren', () => {
@@ -137,4 +138,45 @@ describe('StationMap.vue', () => {
     // Prüft, ob L.marker mit dem Fallback-Namen (ID1) aufgerufen wurde
     expect(L.marker).toHaveBeenCalled();
     });
+
+  it('sollte fitBounds nicht aufrufen, wenn keine Layer vorhanden sind', () => {
+    mockLayerEntries = [];
+
+    mount(StationMap, {
+      props: {
+        stations: [],
+        centerLat: 48,
+        centerLng: 8,
+        radiusKm: 0
+      }
+    });
+
+    expect(mockMapInstance.fitBounds).not.toHaveBeenCalled();
+  });
+
+  it('sollte in updateMarkers früh zurückkehren, wenn keine map gesetzt ist', () => {
+    const wrapper = mount(StationMap, {
+      props: {
+        stations: [],
+        centerLat: 48,
+        centerLng: 8
+      }
+    });
+
+    // @ts-ignore
+    wrapper.vm.__test__.setMap(null);
+    // @ts-ignore
+    const result = wrapper.vm.__test__.updateMarkers();
+    expect(result).toBe(false);
+  });
+
+  it('sollte initializeMap mit null-container abbrechen', () => {
+    const wrapper = mount(StationMap, {
+      props: { stations: [] }
+    });
+
+    // @ts-ignore
+    const result = wrapper.vm.__test__.initializeMap(null);
+    expect(result).toBe(false);
+  });
 });

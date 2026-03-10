@@ -104,4 +104,88 @@ describe('TemperatureChart.vue', () => {
     const color = wrapper.vm.getColor('Mars-Wetter Tmin');
     expect(color).toBe('#93c5fd'); // Der palette.tmin Fallback
   });
+
+  it('sollte bei fehlenden request- und fallback-Jahren leere Labels verwenden', () => {
+    const dataWithoutYears = {
+      year: { data: [] },
+      seasons: {}
+    };
+
+    mount(TemperatureChart, {
+      props: { selections: ['Ganzes Jahr Tmin'], data: dataWithoutYears }
+    });
+
+    const chartConfig = (Chart as any).mock.calls[0][1];
+    expect(chartConfig.data.labels).toEqual([]);
+    expect(chartConfig.data.datasets[0].data).toEqual([]);
+  });
+
+  it('sollte ohne data-Prop mit leerem Datensatz initialisieren', () => {
+    mount(TemperatureChart, {
+      props: { selections: ['Winter Tmin'] }
+    });
+
+    const chartConfig = (Chart as any).mock.calls[0][1];
+    expect(chartConfig.data.labels).toEqual([]);
+    expect(chartConfig.data.datasets).toEqual([]);
+  });
+
+  it('sollte mehrfaches Setzen derselben Saison-Maps verarbeiten', () => {
+    const repeatedData = {
+      request: { start_year: 2020, end_year: 2021 },
+      year: {
+        data: [
+          { year: 2020, tmin_mean_c: 4, tmax_mean_c: 10 },
+          { year: 2021, tmin_mean_c: 5, tmax_mean_c: 11 }
+        ]
+      }
+    };
+
+    mount(TemperatureChart, {
+      props: {
+        selections: ['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax'],
+        data: repeatedData
+      }
+    });
+
+    const chartConfig = (Chart as any).mock.calls[0][1];
+    expect(chartConfig.data.datasets[0].data).toEqual([4, 5]);
+    expect(chartConfig.data.datasets[1].data).toEqual([10, 11]);
+  });
+
+  it('sollte updateChart abbrechen, wenn kein Canvas gesetzt ist', () => {
+    const wrapper = mount(TemperatureChart, {
+      props: { selections: ['Ganzes Jahr Tmin'], data: fullMockData }
+    });
+
+    vi.clearAllMocks();
+    // @ts-ignore
+    wrapper.vm.__test__.setChartCanvas(null);
+    // @ts-ignore
+    wrapper.vm.__test__.updateChart();
+
+    expect(Chart).not.toHaveBeenCalled();
+  });
+
+  it('sollte fallback-Jahre ohne gueltigen Request aufsteigend sortieren', () => {
+    const dataWithoutValidRequest = {
+      request: { start_year: 2022, end_year: 2020 },
+      year: {
+        data: [
+          { year: 2021, tmin_mean_c: 6, tmax_mean_c: 12 },
+          { year: 2019, tmin_mean_c: 3, tmax_mean_c: 8 }
+        ]
+      }
+    };
+
+    mount(TemperatureChart, {
+      props: {
+        selections: ['Ganzes Jahr Tmin'],
+        data: dataWithoutValidRequest
+      }
+    });
+
+    const chartConfig = (Chart as any).mock.calls[0][1];
+    expect(chartConfig.data.labels).toEqual([2019, 2021]);
+  });
 });

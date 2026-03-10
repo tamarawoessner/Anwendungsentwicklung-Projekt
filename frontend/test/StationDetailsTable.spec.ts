@@ -27,6 +27,9 @@ describe('StationDetailsTable.vue', () => {
       props: { selections: ['Tmin'], data: null }
     });
     expect(wrapper.text()).toContain('Keine Daten verfügbar');
+    // computed explizit lesen, damit der fruehe Return in tableData sicher ausgefuehrt wird
+    // @ts-ignore
+    expect(wrapper.vm.tableData).toEqual([]);
   });
 
   it('sollte Fallback-Jahre nutzen, wenn Request-Daten fehlen (Zeilen 22-26)', () => {

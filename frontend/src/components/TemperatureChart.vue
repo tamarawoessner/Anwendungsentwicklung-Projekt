@@ -149,6 +149,15 @@ onMounted(() => updateChart());
 watch(() => [props.selections, props.data], () => {
   updateChart();
 }, { deep: true });
+
+defineExpose({
+  __test__: {
+    updateChart,
+    setChartCanvas: (el: HTMLCanvasElement | null) => {
+      chartCanvas.value = el;
+    }
+  }
+});
 </script>
 
 <template>
