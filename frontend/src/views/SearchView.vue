@@ -90,15 +90,19 @@ const sidebarInitialSearch = computed(() => ({
   limit: searchLimit.value
 }));
 
+const setupResizeObserver = (target: HTMLElement | null) => {
+  if (!target) return;
+
+  resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      containerWidth.value = entry.contentRect.width;
+    }
+  });
+  resizeObserver.observe(target);
+};
+
 onMounted(() => {
-  if (nearbyRef.value) {
-    resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        containerWidth.value = entry.contentRect.width;
-      }
-    });
-    resizeObserver.observe(nearbyRef.value);
-  }
+  setupResizeObserver(nearbyRef.value);
 
   const queryLat = parseQueryNumber(route.query.lat);
   const queryLng = parseQueryNumber(route.query.lng);
@@ -135,6 +139,12 @@ onMounted(() => {
 
 onUnmounted(() => {
   resizeObserver?.disconnect();
+});
+
+defineExpose({
+  __test__: {
+    setupResizeObserver
+  }
 });
 
 const handleSearch = async (payload: SearchParams) => {
