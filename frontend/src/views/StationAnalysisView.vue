@@ -45,6 +45,7 @@ onMounted(() => {
 });
 
 const toggleSelection = (bereich: string) => {
+  // Outer labels toggle their linked Tmin/Tmax pair; inner labels toggle individually.
   const relations: Record<string, string[]> = {
     'Ganzes Jahr': ['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax'],
     'Winter': ['Winter Tmin', 'Winter Tmax'],
@@ -95,6 +96,7 @@ const buildRequestPayload = () => {
 };
 
 const dateValidation = computed(() => {
+  // Returns both the message and field-level error flags so only affected inputs are highlighted.
   const result = {
     message: null as string | null,
     startError: false,
@@ -136,6 +138,7 @@ const dateValidation = computed(() => {
 const dateError = computed(() => dateValidation.value.message);
 
 const noDataInSelectedPeriod = computed(() => {
+  // Show "no data" only when request is valid, finished, and the response contains no usable values.
   if (isLoading.value || dateError.value) return false;
   if (startYearInput.value === null || endYearInput.value === null) return false;
   if (!fetchedStationData.value) return false;
@@ -178,6 +181,7 @@ const fetchStationData = async () => {
   }
 
   isLoading.value = true;
+  // Selection choices are sent in the POST body; year range is passed via query params.
   const payload = buildRequestPayload();
 
   try {
@@ -204,10 +208,12 @@ const fetchStationData = async () => {
 };
 
 watch([activeSelections, startYearInput, endYearInput], () => {
+  // Re-fetch whenever filters change so chart/table stay in sync with the current selection.
   fetchStationData();
 }, { deep: true });
 
 const goBackToSearch = () => {
+  // Restore only valid search params to keep the previous search context stable.
   const query: Record<string, string> = {};
 
   const lat = route.query.lat;

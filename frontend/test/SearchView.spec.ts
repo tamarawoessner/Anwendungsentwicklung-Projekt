@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router';
 import SearchView from '../src/views/SearchView.vue';
 import Sidebar from '../src/components/Sidebar.vue';
 
-// 1. Router Mocking - WICHTIG: Die Variablen müssen ganz oben stehen
+// Keep mock state at module scope so the vue-router mock can read the latest query values.
 const mockPush = vi.fn();
 let mockQueryParams = {};
 
@@ -13,7 +13,7 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ query: mockQueryParams })
 }));
 
-// 2. ResizeObserver Mocking
+// Minimal ResizeObserver test double to drive responsive card-count behavior deterministically.
 class ResizeObserverMock {
   static instances: ResizeObserverMock[] = [];
   callback: ResizeObserverCallback;
@@ -35,10 +35,10 @@ global.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
 
 describe('SearchView.vue', () => {
   beforeEach(() => {
-    vi.clearAllMocks(); // Setzt alle Mocks (fetch, push etc.) zurück
+    vi.clearAllMocks();
     global.fetch = vi.fn();
     sessionStorage.clear();
-    mockQueryParams = {}; // Reset der Query Params
+    mockQueryParams = {};
     ResizeObserverMock.instances = [];
   });
 
@@ -120,8 +120,7 @@ describe('SearchView.vue', () => {
     };
     sessionStorage.setItem('weather-search-state', JSON.stringify(savedState));
 
-    // WICHTIG: Wir sagen dem Fetch-Mock hier, was er zurückgeben soll, 
-    // um den "Cannot read properties of undefined (reading 'ok')" Fehler zu vermeiden
+    // The component performs an automatic load on mount, so fetch needs a valid default response.
     (global.fetch as any).mockResolvedValue({
       ok: true,
       json: async () => ({ stations: [], count: 0 })
@@ -151,7 +150,6 @@ describe('SearchView.vue', () => {
   });
 
   it('sollte mit korruptem SessionStorage umgehen können', async () => {
-    // Wir schreiben "Müll" in den Speicher, der kein gültiges JSON ist
     sessionStorage.setItem('weather-search-state', 'KEIN_JSON');
 
     const wrapper = mount(SearchView, {
@@ -159,7 +157,6 @@ describe('SearchView.vue', () => {
     });
 
     await flushPromises();
-    // Die Komponente sollte nicht crashen, sondern den Fehler abfangen (Zeile 63/78)
     expect(wrapper.exists()).toBe(true);
   });
 
@@ -173,18 +170,14 @@ describe('SearchView.vue', () => {
       global: { stubs: { Sidebar: true, StationMap: true, NearbyCard: true } }
     });
 
-    // Suche auslösen
     await wrapper.findComponent(Sidebar).vm.$emit('search', { lat: 48, lng: 8, radius: 10 });
     await flushPromises();
 
-    // In der Sidebar sollte nun der Text für "Keine Treffer" erscheinen (falls die Stub das zulässt)
-    // Da wir Sidebar stubben, prüfen wir stattdessen die interne Variable, falls möglich, 
-    // oder wir entfernen den Stub kurz für diesen Test.
+    // Sidebar is stubbed, so we assert via component state instead of rendered text.
     expect(wrapper.vm.stations).toHaveLength(0);
   });
 
   it('sollte handleSearch nicht aufrufen, wenn URL-Parameter unvollständig sind', async () => {
-    // Nur lat, aber kein lng in der URL
     mockQueryParams = { lat: '48.05' }; 
 
     mount(SearchView, {
@@ -192,13 +185,11 @@ describe('SearchView.vue', () => {
     });
 
     await flushPromises();
-    // fetch darf nicht gerufen werden, da ein Teil fehlt (Zeile 114-118)
     expect(global.fetch).not.toHaveBeenCalled();
     mockQueryParams = {};
   });
 
   it('sollte bei fehlerhaftem JSON im SessionStorage diesen ignorieren', async () => {
-    // Wir setzen einen Wert, der beim JSON.parse() einen Error wirft
     sessionStorage.setItem('weather-search-state', 'definitiv-kein-json');
     
     const wrapper = mount(SearchView, {
@@ -206,7 +197,6 @@ describe('SearchView.vue', () => {
     });
     
     await flushPromises();
-    // Die Komponente sollte einfach normal weiterlaufen (Zeile 63/78)
     expect(wrapper.exists()).toBe(true);
   });
 
@@ -556,6 +546,7 @@ describe('SearchView.vue', () => {
     });
 
     const beforeCount = ResizeObserverMock.instances.length;
+    // Expose-only helper used to directly cover the null-guard branch.
     // @ts-ignore
     wrapper.vm.__test__.setupResizeObserver(null);
     expect(ResizeObserverMock.instances.length).toBe(beforeCount);

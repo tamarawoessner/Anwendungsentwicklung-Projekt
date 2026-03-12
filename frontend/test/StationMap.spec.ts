@@ -9,8 +9,7 @@ const mockMapInstance = {
   fitBounds: vi.fn().mockReturnThis(),
 };
 
-// --- LEAFLET MOCKING ---
-// Wir fälschen die gesamte Leaflet-Bibliothek, damit sie im Test nicht crasht
+// Full Leaflet mock to keep map rendering deterministic in jsdom.
 vi.mock('leaflet', () => {
   const mockLayer = {
     bindPopup: vi.fn().mockReturnThis(),
@@ -44,7 +43,6 @@ vi.mock('leaflet', () => {
 
 describe('StationMap.vue', () => {
   beforeEach(() => {
-    // Vor jedem Test setzen wir unsere Zähler zurück
     vi.clearAllMocks();
     mockLayerEntries = ['mock-layer'];
   });
@@ -54,7 +52,6 @@ describe('StationMap.vue', () => {
       props: { stations: [] }
     });
     
-    // Prüfen, ob Leaflet angewiesen wurde, eine Karte zu bauen
     expect(L.map).toHaveBeenCalledTimes(1);
     expect(L.tileLayer).toHaveBeenCalledTimes(1);
   });
@@ -71,26 +68,22 @@ describe('StationMap.vue', () => {
       }
     });
 
-    // Prüfen, ob der rote Punkt (Suchpunkt) an den korrekten Koordinaten gezeichnet wurde
     expect(L.circleMarker).toHaveBeenCalledWith([48.05, 8.46], expect.any(Object));
     
-    // Prüfen, ob der Radius-Kreis (in Metern) berechnet wurde (20km * 1000 = 20000m)
+    // Radius is expected in meters.
     expect(L.circle).toHaveBeenCalledWith([48.05, 8.46], expect.objectContaining({ radius: 20000 }));
 
-    // Prüfen, ob die Station als Marker gesetzt wurde
     expect(L.marker).toHaveBeenCalledWith([48.06, 8.46]);
   });
 
   it('sollte die Karte aktualisieren, wenn sich die Props ändern (Watcher)', async () => {
-    // 1. Karte komplett leer aufbauen
     const wrapper = mount(StationMap, {
       props: { stations: [] }
     });
 
-    // 2. Mock-Aufrufe des ersten Renderings löschen
+    // Clear initial mount calls so only watcher-triggered updates are asserted.
     vi.clearAllMocks();
 
-    // 3. Neue Suchanfrage simulieren (Props ändern)
     await wrapper.setProps({
       centerLat: 50.1,
       centerLng: 8.6,
@@ -98,8 +91,6 @@ describe('StationMap.vue', () => {
       stations: []
     });
 
-    // 4. Der Watcher in deinem Code sollte die Änderung bemerkt und 
-    // die Kreise an den NEUEN Koordinaten gezeichnet haben
     expect(L.circleMarker).toHaveBeenCalledWith([50.1, 8.6], expect.any(Object));
   });
 
@@ -107,12 +98,11 @@ describe('StationMap.vue', () => {
     mount(StationMap, {
         props: {
         stations: [],
-        centerLat: null, // Explizit null
+        centerLat: null,
         centerLng: null
         }
     });
 
-    // L.circleMarker darf nicht aufgerufen worden sein
     expect(L.circleMarker).not.toHaveBeenCalled();
     });
 
@@ -124,7 +114,6 @@ describe('StationMap.vue', () => {
         centerLng: 8
       }
     });
-    // Prüft den Fallback-Namen in Zeile 57-58
     expect(L.marker).toHaveBeenCalled();
   });
 
@@ -135,7 +124,6 @@ describe('StationMap.vue', () => {
         centerLat: 48, centerLng: 8, radiusKm: 10
         }
     });
-    // Prüft, ob L.marker mit dem Fallback-Namen (ID1) aufgerufen wurde
     expect(L.marker).toHaveBeenCalled();
     });
 
@@ -163,7 +151,7 @@ describe('StationMap.vue', () => {
       }
     });
 
-    // @ts-ignore
+    // @ts-ignore test helper intentionally mutates internal map reference
     wrapper.vm.__test__.setMap(null);
     // @ts-ignore
     const result = wrapper.vm.__test__.updateMarkers();

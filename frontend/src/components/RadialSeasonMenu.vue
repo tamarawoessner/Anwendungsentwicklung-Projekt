@@ -7,6 +7,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['selection-changed']);
 
+// Outer categories control the corresponding Tmin/Tmax inner selections.
 const relations: Record<string, string[]> = {
   'Ganzes Jahr': ['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax'],
   'Winter': ['Winter Tmin', 'Winter Tmax'],
@@ -15,13 +16,16 @@ const relations: Record<string, string[]> = {
   'Herbst': ['Herbst Tmin', 'Herbst Tmax']
 };
 
+// Tracks which outer slice is currently hovered to preview linked inner slices.
 const hoveredOuter = ref<string | null>(null);
 
 const select = (bereich: string) => {
+  // Keep selection state in the parent; this component only emits user intent.
   emit('selection-changed', bereich);
 }
 
 const isActive = (bereich: string) => {
+  // An outer category is considered active as soon as one linked inner value is active.
   if (relations[bereich]) {
     return relations[bereich].some(s => props.activeSelections.includes(s));
   }
@@ -38,9 +42,6 @@ const isHoverLinked = (bereich: string) => {
   const linkedGroup = relations[hoveredOuter.value];
   if (!linkedGroup?.includes(bereich)) return false;
 
-  // Only preview linked inner slices when the hovered group is fully inactive.
-  // If one inner slice is already active and the other was disabled by the user,
-  // the disabled one should stay gray.
   const hasActiveInGroup = linkedGroup.some(s => props.activeSelections.includes(s));
   return !hasActiveInGroup;
 };
@@ -48,7 +49,7 @@ const isHoverLinked = (bereich: string) => {
 
 <template>
   <div class="menus-container">
-    
+    <!-- Seasonal wheel: outer slices = seasons, inner slices = Tmin/Tmax per season. -->
     <div class="wheel-wrapper">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="interactive-wheel">
         <defs>
@@ -95,6 +96,7 @@ const isHoverLinked = (bereich: string) => {
       </svg>
     </div>
 
+    <!-- Year wheel: same interaction model, but only for "Ganzes Jahr" Tmin/Tmax. -->
     <div class="wheel-wrapper">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="interactive-wheel">
         <defs>

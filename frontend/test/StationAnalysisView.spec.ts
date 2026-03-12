@@ -12,7 +12,6 @@ vi.mock('vue-router', () => ({
 describe('StationAnalysisView.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Stabiler Fetch-Mock für den Standardfall
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ availability: { start_year: 1950, end_year: 2023 } })
@@ -49,19 +48,17 @@ describe('StationAnalysisView.vue', () => {
     });
     await flushPromises();
 
-    // 1. Bereich hinzufügen (Winter -> Tmin & Tmax)
     // @ts-ignore
     wrapper.vm.toggleSelection('Winter');
     // @ts-ignore
     expect(wrapper.vm.activeSelections).toContain('Winter Tmin');
 
-    // 2. Bereich entfernen
     // @ts-ignore
     wrapper.vm.toggleSelection('Winter');
     // @ts-ignore
     expect(wrapper.vm.activeSelections).not.toContain('Winter Tmin');
 
-    // 3. Einzelwert toggeln (deckt den else-Zweig ab)
+    // Cover single-item toggle branch.
     // @ts-ignore
     wrapper.vm.toggleSelection('Ganzes Jahr Tmin'); 
     // @ts-ignore
@@ -75,29 +72,26 @@ describe('StationAnalysisView.vue', () => {
     });
     await flushPromises();
 
-    // Verfügbarkeit setzen
+    // Force a known availability range for deterministic validation assertions.
     // @ts-ignore
     wrapper.vm.currentStation.period = "1950-2023";
 
-    // Pfad 1: Start >= Ende
     // @ts-ignore
     wrapper.vm.startYearInput = 2020; wrapper.vm.endYearInput = 2010;
     // @ts-ignore
     expect(wrapper.vm.dateError).toBe("Das Startjahr muss vor dem Endjahr liegen.");
 
-    // Pfad 2: Vor Verfügbarkeit (1950)
     // @ts-ignore
     wrapper.vm.startYearInput = 1940; wrapper.vm.endYearInput = 2000;
     // @ts-ignore
     expect(wrapper.vm.dateError).toContain("Daten erst ab 1950 verfügbar.");
 
-    // Pfad 3: Nach Verfügbarkeit (2023)
     // @ts-ignore
     wrapper.vm.startYearInput = 2000; wrapper.vm.endYearInput = 2025;
     // @ts-ignore
     expect(wrapper.vm.dateError).toContain("Daten nur bis 2023 verfügbar.");
 
-    // Pfad 4: Ungültiges Perioden-Format (Zeile 110)
+    // Invalid period format should skip DB-bound checks.
     // @ts-ignore
     wrapper.vm.startYearInput = 2000; wrapper.vm.endYearInput = 2010;
     // @ts-ignore
@@ -133,7 +127,8 @@ describe('StationAnalysisView.vue', () => {
     expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({
       name: 'search',
       query: expect.objectContaining({
-        start_year: '1990', // Mapped von search_start_year
+        // search_start_year/search_end_year are remapped to start_year/end_year.
+        start_year: '1990',
         end_year: '2010'
       })
     }));
@@ -250,7 +245,7 @@ describe('StationAnalysisView.vue', () => {
     });
     await flushPromises();
 
-    // Winter Tmin ist initial nicht aktiv und muss daher per push hinzugefügt werden.
+    // Winter Tmin starts inactive and should be appended by the toggle.
     // @ts-ignore
     wrapper.vm.toggleSelection('Winter Tmin');
     // @ts-ignore
@@ -283,7 +278,7 @@ describe('StationAnalysisView.vue', () => {
     });
     await flushPromises();
 
-    // Ausgangslage: Winter Tmin bereits gesetzt, Winter Tmax fehlt.
+    // One subgroup already active: only the missing partner should be added.
     // @ts-ignore
     wrapper.vm.activeSelections = ['Winter Tmin'];
     // @ts-ignore
