@@ -8,7 +8,7 @@ describe('RadialSeasonMenu.vue', () => {
       props: { activeSelections: [] }
     });
 
-    // Wir suchen den Pfad für "Winter" (der erste outer-slice)
+    // First outer slice represents "Winter".
     const winterPath = wrapper.find('.outer-slice');
     await winterPath.trigger('click');
 
@@ -21,7 +21,6 @@ describe('RadialSeasonMenu.vue', () => {
       props: { activeSelections: ['Winter Tmin'] }
     });
 
-    // Der innere Pfad für Winter Tmin sollte aktiv sein
     const activeSlice = wrapper.find('.inner-slice.active');
     expect(activeSlice.exists()).toBe(true);
   });
@@ -33,7 +32,7 @@ describe('RadialSeasonMenu.vue', () => {
 
     const winterPath = wrapper.find('.outer-slice');
     await winterPath.trigger('mouseenter');
-    // @ts-ignore - Zugriff auf internes ref für Coverage
+    // @ts-ignore Access internal ref to assert hover state changes.
     expect(wrapper.vm.hoveredOuter).toBe('Winter');
 
     await winterPath.trigger('mouseleave');
@@ -46,12 +45,11 @@ describe('RadialSeasonMenu.vue', () => {
       props: { activeSelections: [] }
     });
 
-    // Wir suchen das Ganzes-Jahr-Segment im zweiten SVG (Zeilen 110-113)
-    const yearWheel = wrapper.findAll('.outer-slice').at(4); // Das 5. Segment ist "Ganzes Jahr"
+    // The 5th outer slice belongs to the "Ganzes Jahr" wheel.
+    const yearWheel = wrapper.findAll('.outer-slice').at(4);
     await yearWheel?.trigger('click');
     expect(wrapper.emitted('selection-changed')![0]).toEqual(['Ganzes Jahr']);
 
-    // Hover auf das Jahr-Rad (Zeilen 73-86 Logik)
     await yearWheel?.trigger('mouseenter');
     // @ts-ignore
     expect(wrapper.vm.hoveredOuter).toBe('Ganzes Jahr');
@@ -62,7 +60,7 @@ describe('RadialSeasonMenu.vue', () => {
       props: { activeSelections: [] }
     });
 
-    const innerYearMin = wrapper.findAll('.inner-slice').at(8); // Tmin Ganzes Jahr
+    const innerYearMin = wrapper.findAll('.inner-slice').at(8);
     await innerYearMin?.trigger('click');
     expect(wrapper.emitted('selection-changed')![0]).toEqual(['Ganzes Jahr Tmin']);
   });
@@ -72,17 +70,15 @@ describe('RadialSeasonMenu.vue', () => {
       props: { activeSelections: [] }
     });
 
-    // 1. Hover auf Winter
     const winterPath = wrapper.find('.outer-slice');
     await winterPath.trigger('mouseenter');
     
-    // @ts-ignore - Prüfen ob inneres Segment nun 'linked-hover' Klasse hat
+    // @ts-ignore A linked inner slice should preview with the linked-hover class.
     expect(wrapper.find('.inner-slice').classes()).toContain('linked-hover');
 
-    // 2. Jetzt Winter Tmin aktivieren
     await wrapper.setProps({ activeSelections: ['Winter Tmin'] });
     
-    // @ts-ignore - Wenn schon eins aktiv ist, sollte linked-hover false sein (Zeile 85-86)
+    // @ts-ignore If one value in a group is active, linked hover preview is disabled.
     const isLinked = wrapper.vm.isHoverLinked('Winter Tmax');
     expect(isLinked).toBe(false);
   });
@@ -92,15 +88,12 @@ describe('RadialSeasonMenu.vue', () => {
       props: { activeSelections: [] }
     });
 
-    // @ts-ignore
     expect(wrapper.vm.isActive('Winter')).toBe(false);
 
     await wrapper.setProps({ activeSelections: ['Winter Tmin'] });
-    // @ts-ignore
     expect(wrapper.vm.isActive('Winter')).toBe(true);
 
     await wrapper.setProps({ activeSelections: ['Winter Tmax'] });
-    // @ts-ignore
     expect(wrapper.vm.isActive('Winter')).toBe(true);
   });
 
@@ -109,9 +102,7 @@ describe('RadialSeasonMenu.vue', () => {
       props: { activeSelections: ['Sommer Tmax'] }
     });
 
-    // @ts-ignore
     expect(wrapper.vm.isActive('Sommer Tmax')).toBe(true);
-    // @ts-ignore
     expect(wrapper.vm.isActive('Sommer Tmin')).toBe(false);
   });
 
@@ -120,7 +111,6 @@ describe('RadialSeasonMenu.vue', () => {
       props: { activeSelections: [] }
     });
 
-    // @ts-ignore
     expect(wrapper.vm.isHoverLinked('Winter Tmin')).toBe(false);
   });
 
@@ -132,7 +122,6 @@ describe('RadialSeasonMenu.vue', () => {
     const winterPath = wrapper.findAll('.outer-slice').at(0);
     await winterPath?.trigger('mouseenter');
 
-    // @ts-ignore
     expect(wrapper.vm.isHoverLinked('Herbst Tmin')).toBe(false);
   });
 
@@ -144,9 +133,7 @@ describe('RadialSeasonMenu.vue', () => {
     const springPath = wrapper.findAll('.outer-slice').at(1);
     await springPath?.trigger('mouseenter');
 
-    // @ts-ignore
     expect(wrapper.vm.isHoverLinked('Frühling Tmin')).toBe(true);
-    // @ts-ignore
     expect(wrapper.vm.isHoverLinked('Frühling Tmax')).toBe(true);
   });
 
@@ -162,11 +149,9 @@ describe('RadialSeasonMenu.vue', () => {
 
     for (let i = 0; i < outerSlices.length; i += 1) {
       await outerSlices[i].trigger('mouseenter');
-      // @ts-ignore
       expect(wrapper.vm.hoveredOuter).toBe(expectedOuter[i]);
 
       await outerSlices[i].trigger('mouseleave');
-      // @ts-ignore
       expect(wrapper.vm.hoveredOuter).toBe(null);
     }
   });

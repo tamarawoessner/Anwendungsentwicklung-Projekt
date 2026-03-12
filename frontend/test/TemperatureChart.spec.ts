@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TemperatureChart from '../src/components/TemperatureChart.vue';
 import Chart from 'chart.js/auto';
 
-// Korrekter Mock: Wir verwenden eine Klasse, damit "new Chart()" funktioniert
+// Mock as constructor-compatible implementation because the component calls `new Chart(...)`.
 vi.mock('chart.js/auto', () => {
   return {
     default: vi.fn().mockImplementation(function() {
@@ -16,7 +16,7 @@ vi.mock('chart.js/auto', () => {
 });
 
 describe('TemperatureChart.vue', () => {
-  // Wir bauen ein großes Mock-Datenobjekt, um alle Seasons abzudecken
+  // Covers year + all seasonal branches.
   const fullMockData = {
     request: { start_year: 2020, end_year: 2020 },
     year: { data: [{ year: 2020, tmin_mean_c: 5, tmax_mean_c: 15 }] },
@@ -40,10 +40,8 @@ describe('TemperatureChart.vue', () => {
       }
     });
 
-    // Prüft, ob der Konstruktor aufgerufen wurde
     expect(Chart).toHaveBeenCalled();
     
-    // Wir triggern den Farbalgorithmus (getColor) über neue Selections
     await wrapper.setProps({ 
       selections: ['Frühling Tmin', 'Herbst Tmax', 'Unbekannt'] 
     });
@@ -52,7 +50,6 @@ describe('TemperatureChart.vue', () => {
   });
 
   it('sollte buildYearRange Randfälle abdecken', async () => {
-    // Fall: Keine request-Daten, nutze Fallback aus labels (Set)
     const dataWithoutRequest = { 
         year: { data: [{ year: 2010 }] } 
     };
@@ -69,15 +66,12 @@ describe('TemperatureChart.vue', () => {
       props: { selections: ['Ganzes Jahr Tmin'], data: fullMockData }
     });
 
-    // Wir holen uns die Optionen, die an Chart.js übergeben wurden
     const chartOptions = (Chart as any).mock.calls[0][1].options;
     const tooltipLabel = chartOptions.plugins.tooltip.callbacks.label;
 
-    // Wir simulieren den Aufruf des Tooltips
     const mockContext = { parsed: { y: 12.345 }, dataset: { label: 'Test' } };
     expect(tooltipLabel(mockContext)).toBe('Test: 12.3 °C');
 
-    // Randfall: Fehlender Wert im Tooltip
     expect(tooltipLabel({ parsed: { y: null }, dataset: { label: 'Leer' } })).toBe('Leer: -');
   });
 
@@ -89,7 +83,6 @@ describe('TemperatureChart.vue', () => {
     const chartOptions = (Chart as any).mock.calls[0][1].options;
     const legendOnClick = chartOptions.plugins.legend.onClick;
 
-    // Simuliere Klick auf die Legende
     legendOnClick({}, { text: 'Ganzes Jahr Tmin' });
     
     expect(wrapper.emitted()).toHaveProperty('toggle-selection');
@@ -102,7 +95,7 @@ describe('TemperatureChart.vue', () => {
     });
     // @ts-ignore
     const color = wrapper.vm.getColor('Mars-Wetter Tmin');
-    expect(color).toBe('#93c5fd'); // Der palette.tmin Fallback
+    expect(color).toBe('#93c5fd');
   });
 
   it('sollte bei fehlenden request- und fallback-Jahren leere Labels verwenden', () => {
@@ -159,7 +152,7 @@ describe('TemperatureChart.vue', () => {
     });
 
     vi.clearAllMocks();
-    // @ts-ignore
+    // @ts-ignore Test helper intentionally controls internal canvas ref.
     wrapper.vm.__test__.setChartCanvas(null);
     // @ts-ignore
     wrapper.vm.__test__.updateChart();

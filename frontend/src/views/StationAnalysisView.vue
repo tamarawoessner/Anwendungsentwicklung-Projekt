@@ -45,6 +45,7 @@ onMounted(() => {
 });
 
 const toggleSelection = (bereich: string) => {
+  // Outer labels toggle their linked Tmin/Tmax pair; inner labels toggle individually.
   const relations: Record<string, string[]> = {
     'Ganzes Jahr': ['Ganzes Jahr Tmin', 'Ganzes Jahr Tmax'],
     'Winter': ['Winter Tmin', 'Winter Tmax'],
@@ -94,31 +95,78 @@ const buildRequestPayload = () => {
   return { selection: selectionObj };
 };
 
-const dateError = computed(() => {
+const dateValidation = computed(() => {
+  // Returns both the message and field-level error flags so only affected inputs are highlighted.
+  const result = {
+    message: null as string | null,
+    startError: false,
+    endError: false
+  };
+
   if (startYearInput.value === null || endYearInput.value === null) {
-    return null;
+    return result;
   }
 
   if (Number(startYearInput.value) >= Number(endYearInput.value)) {
-    return "Das Startjahr muss vor dem Endjahr liegen.";
+    result.message = "Das Startjahr muss vor dem Endjahr liegen.";
+    result.endError = true;
+    return result;
   }
 
   if (currentStation.value?.period) {
     const [dbStart, dbEnd] = currentStation.value.period.split('-').map(Number);
 
     if (!Number.isFinite(dbStart) || !Number.isFinite(dbEnd)) {
-      return null;
+      return result;
     }
-    
+
     if (Number(startYearInput.value) < dbStart) {
-      return `Daten erst ab ${dbStart} verfügbar.`;
+      result.message = `Daten erst ab ${dbStart} verfügbar.`;
+      result.startError = true;
+      return result;
     }
     if (Number(endYearInput.value) > dbEnd) {
-      return `Daten nur bis ${dbEnd} verfügbar.`;
+      result.message = `Daten nur bis ${dbEnd} verfügbar.`;
+      result.endError = true;
+      return result;
     }
   }
 
-  return null;
+  return result;
+});
+
+const dateError = computed(() => dateValidation.value.message);
+
+const noDataInSelectedPeriod = computed(() => {
+  // Show "no data" only when request is valid, finished, and the response contains no usable values.
+  if (isLoading.value || dateError.value) return false;
+  if (startYearInput.value === null || endYearInput.value === null) return false;
+  if (!fetchedStationData.value) return false;
+
+  const hasValueInBlock = (block: any) => {
+    if (!block?.data || !Array.isArray(block.data)) return false;
+    return block.data.some((point: any) =>
+      point &&
+      Number.isFinite(Number(point.year)) &&
+      Number(point.year) >= Number(startYearInput.value) &&
+      Number(point.year) <= Number(endYearInput.value) &&
+      (point.tmin_mean_c !== null || point.tmax_mean_c !== null)
+    );
+  };
+
+  if (hasValueInBlock(fetchedStationData.value.year)) return false;
+
+  const seasons = fetchedStationData.value.seasons;
+  if (seasons) {
+    const seasonBlocks = [seasons.WINTER, seasons.SPRING, seasons.SUMMER, seasons.AUTUMN];
+    if (seasonBlocks.some((block: any) => hasValueInBlock(block))) return false;
+  }
+
+  return true;
+});
+
+const periodNoDataMessage = computed(() => {
+  return noDataInSelectedPeriod.value ? 'Keine Daten für den Zeitraum verfügbar' : null;
 });
 
 const fetchStationData = async () => {
@@ -133,6 +181,7 @@ const fetchStationData = async () => {
   }
 
   isLoading.value = true;
+  // Selection choices are sent in the POST body; year range is passed via query params.
   const payload = buildRequestPayload();
 
   try {
@@ -159,10 +208,12 @@ const fetchStationData = async () => {
 };
 
 watch([activeSelections, startYearInput, endYearInput], () => {
+  // Re-fetch whenever filters change so chart/table stay in sync with the current selection.
   fetchStationData();
 }, { deep: true });
 
 const goBackToSearch = () => {
+  // Restore only valid search params to keep the previous search context stable.
   const query: Record<string, string> = {};
 
   const lat = route.query.lat;
@@ -223,7 +274,7 @@ const goBackToSearch = () => {
                   id="analysis-start-year"
                   v-model="startYearInput" 
                   class="dark-input compact-year-field"
-                  :class="{ 'input-error': dateError }"
+                  :class="{ 'input-error': dateValidation.startError }"
                 >
               </div>
               <div class="compact-input-group">
@@ -233,12 +284,12 @@ const goBackToSearch = () => {
                   id="analysis-end-year"
                   v-model="endYearInput" 
                   class="dark-input compact-year-field"
-                  :class="{ 'input-error': dateError }"
+                  :class="{ 'input-error': dateValidation.endError }"
                 >
               </div>
 
-              <p v-if="dateError" class="error-box">
-                {{ dateError }}
+              <p v-if="dateError || periodNoDataMessage" class="error-box">
+                {{ dateError || periodNoDataMessage }}
               </p>
             </div>
           </div>
@@ -332,20 +383,13 @@ const goBackToSearch = () => {
 }
 
 .error-box {
-  background-color: rgba(245, 158, 11, 0.15);
-  color: #ffffff;
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  padding: 6px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  margin-top: 5px;
+  margin: 2px 0 0;
+  color: #fda4af;
+  font-size: 0.8rem;
   line-height: 1.2;
 }
 
-.input-error {
-  border-color: #fbbf24;
-  box-shadow: 0 0 5px rgba(251, 191, 36, 0.2);
-}
+
 
 .dark-input {
   background-color: transparent; 
@@ -362,6 +406,14 @@ const goBackToSearch = () => {
 
 .dark-input:focus {
   border-color: #a855f7; 
+}
+
+.dark-input.input-error {
+  border-color: #f87171;
+}
+
+.dark-input.input-error:focus {
+  border-color: #ef4444;
 }
 
 .compact-year-field {

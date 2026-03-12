@@ -18,7 +18,7 @@ describe('StationDetailsTable.vue', () => {
     const rows = wrapper.findAll('tbody tr');
     expect(rows.length).toBeGreaterThan(0);
     expect(wrapper.text()).toContain('2020');
-    // Check Formatierung: 5.2 -> 5,2
+    // Verify locale formatting for decimal values.
     expect(wrapper.text()).toContain('5,2 °C');
   });
 
@@ -27,7 +27,7 @@ describe('StationDetailsTable.vue', () => {
       props: { selections: ['Tmin'], data: null }
     });
     expect(wrapper.text()).toContain('Keine Daten verfügbar');
-    // computed explizit lesen, damit der fruehe Return in tableData sicher ausgefuehrt wird
+    // Read computed value directly to exercise the early-return branch.
     // @ts-ignore
     expect(wrapper.vm.tableData).toEqual([]);
   });
@@ -39,7 +39,7 @@ describe('StationDetailsTable.vue', () => {
     const wrapper = mount(StationDetailsTable, {
       props: { selections: ['Ganzes Jahr Tmin'], data: mockDataNoRequest }
     });
-    // Prüfen, ob Jahre sortiert werden
+    // Fallback years should be sorted descending.
     // @ts-ignore
     expect(wrapper.vm.tableData[0].year).toBe(2015);
   });
