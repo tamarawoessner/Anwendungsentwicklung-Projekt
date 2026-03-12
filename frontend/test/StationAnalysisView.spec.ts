@@ -324,4 +324,107 @@ describe('StationAnalysisView.vue', () => {
       }
     });
   });
+
+  it('zeigt keine No-Data-Meldung, wenn im Jahresblock Werte im Zeitraum vorhanden sind', async () => {
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        request: { start_year: 2000, end_year: 2020 },
+        availability: { start_year: 1950, end_year: 2023 },
+        year: {
+          data: [
+            { year: 2010, tmin_mean_c: 3.2, tmax_mean_c: null }
+          ]
+        }
+      })
+    });
+
+    const wrapper = mount(StationAnalysisView, {
+      props: { stationId: 'STAT1' },
+      global: { stubs: ['TemperatureChart', 'RadialSeasonMenu', 'StationDetailsTable'] }
+    });
+    await flushPromises();
+
+    // @ts-ignore
+    expect(wrapper.vm.periodNoDataMessage).toBeNull();
+    expect(wrapper.text()).not.toContain('Keine Daten für den Zeitraum verfügbar');
+  });
+
+  it('zeigt keine No-Data-Meldung, wenn nur in Saisondaten Werte im Zeitraum vorhanden sind', async () => {
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        request: { start_year: 2000, end_year: 2020 },
+        availability: { start_year: 1950, end_year: 2023 },
+        year: {
+          data: [
+            { year: 2010, tmin_mean_c: null, tmax_mean_c: null }
+          ]
+        },
+        seasons: {
+          WINTER: {
+            data: [
+              { year: 2010, tmin_mean_c: null, tmax_mean_c: null }
+            ]
+          },
+          SPRING: {
+            data: [
+              { year: 2010, tmin_mean_c: null, tmax_mean_c: null }
+            ]
+          },
+          SUMMER: {
+            data: [
+              { year: 2010, tmin_mean_c: null, tmax_mean_c: null }
+            ]
+          },
+          AUTUMN: {
+            data: [
+              { year: 2010, tmin_mean_c: 7.5, tmax_mean_c: null }
+            ]
+          }
+        }
+      })
+    });
+
+    const wrapper = mount(StationAnalysisView, {
+      props: { stationId: 'STAT1' },
+      global: { stubs: ['TemperatureChart', 'RadialSeasonMenu', 'StationDetailsTable'] }
+    });
+    await flushPromises();
+
+    // @ts-ignore
+    expect(wrapper.vm.periodNoDataMessage).toBeNull();
+    expect(wrapper.text()).not.toContain('Keine Daten für den Zeitraum verfügbar');
+  });
+
+  it('zeigt die No-Data-Meldung, wenn Saisondaten vorhanden sind aber keine Werte enthalten', async () => {
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        request: { start_year: 2000, end_year: 2020 },
+        availability: { start_year: 1950, end_year: 2023 },
+        year: {
+          data: [
+            { year: 2010, tmin_mean_c: null, tmax_mean_c: null }
+          ]
+        },
+        seasons: {
+          WINTER: { data: [{ year: 2010, tmin_mean_c: null, tmax_mean_c: null }] },
+          SPRING: { data: [{ year: 2010, tmin_mean_c: null, tmax_mean_c: null }] },
+          SUMMER: { data: [{ year: 2010, tmin_mean_c: null, tmax_mean_c: null }] },
+          AUTUMN: { data: [{ year: 2010, tmin_mean_c: null, tmax_mean_c: null }] }
+        }
+      })
+    });
+
+    const wrapper = mount(StationAnalysisView, {
+      props: { stationId: 'STAT1' },
+      global: { stubs: ['TemperatureChart', 'RadialSeasonMenu', 'StationDetailsTable'] }
+    });
+    await flushPromises();
+
+    // @ts-ignore
+    expect(wrapper.vm.periodNoDataMessage).toBe('Keine Daten für den Zeitraum verfügbar');
+    expect(wrapper.text()).toContain('Keine Daten für den Zeitraum verfügbar');
+  });
 });

@@ -138,7 +138,6 @@ const dateError = computed(() => dateValidation.value.message);
 const noDataInSelectedPeriod = computed(() => {
   if (isLoading.value || dateError.value) return false;
   if (startYearInput.value === null || endYearInput.value === null) return false;
-  if (startYearInput.value >= endYearInput.value) return false;
   if (!fetchedStationData.value) return false;
 
   const hasValueInBlock = (block: any) => {
@@ -156,10 +155,8 @@ const noDataInSelectedPeriod = computed(() => {
 
   const seasons = fetchedStationData.value.seasons;
   if (seasons) {
-    if (hasValueInBlock(seasons.WINTER)) return false;
-    if (hasValueInBlock(seasons.SPRING)) return false;
-    if (hasValueInBlock(seasons.SUMMER)) return false;
-    if (hasValueInBlock(seasons.AUTUMN)) return false;
+    const seasonBlocks = [seasons.WINTER, seasons.SPRING, seasons.SUMMER, seasons.AUTUMN];
+    if (seasonBlocks.some((block: any) => hasValueInBlock(block))) return false;
   }
 
   return true;
