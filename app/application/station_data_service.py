@@ -1,5 +1,3 @@
-# app/application/station_data_service.py
-
 from app.infrastructure.db.aggregation_repository import (
     read_station_data_year,
     read_station_data_seasons,
